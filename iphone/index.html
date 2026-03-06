@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DiceIQ">
+  <title>DiceIQ</title>
+
+  <style>
+
+    /* ═══════════════════════════════════════════
+       BASE & RESET
+    ═══════════════════════════════════════════ */
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    :root {
+      --black:   #000000;
+      --deep:    #0a0a0a;
+      --surface: #141414;
+      --border:  #2a2a2a;
+      --gold:    #f0c040;
+      --gold-dim:#a07820;
+      --green:   #00e676;
+      --red:     #ff1744;
+      --white:   #ffffff;
+      --grey:    #555555;
+      --font:    -apple-system, 'Helvetica Neue', sans-serif;
+      --mono:    'Courier New', monospace;
+    }
+
+    html, body {
+      background:  var(--black);
+      color:       var(--white);
+      font-family: var(--font);
+      height:      100%;
+      overflow:    hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCREENS
+    ═══════════════════════════════════════════ */
+    .screen { display:none; flex-direction:column; min-height:100vh; padding:16px; }
+    .screen.active { display:flex; }
+
+    /* ═══════════════════════════════════════════
+       SETUP SCREEN
+    ═══════════════════════════════════════════ */
+    .logo {
+      font-size:1.8rem; font-weight:700; color:var(--gold);
+      text-align:center; margin-top:8px; letter-spacing:6px;
+    }
+    .tagline {
+      text-align:center; color:var(--grey); font-size:0.7rem;
+      letter-spacing:2px; margin-bottom:10px; text-transform:uppercase;
+    }
+    .setup-form { display:flex; flex-direction:column; gap:8px; flex:1; }
+
+    .form-label {
+      color:var(--gold-dim); font-size:0.7rem;
+      letter-spacing:2px; text-transform:uppercase; margin-bottom:-4px;
+    }
+    .form-control {
+      background:var(--surface); border:2px solid var(--border);
+      color:var(--white); font-family:var(--font); font-size:1rem;
+      padding:10px 12px; border-radius:8px; width:100%; appearance:none;
+      -webkit-appearance:none;
+    }
+    .form-control:focus { border-color:var(--gold); outline:none; }
+
+    .btn-primary {
+      background:var(--gold); color:var(--black); border:none;
+      font-family:var(--font); font-size:1.1rem; font-weight:700;
+      letter-spacing:3px; padding:14px; border-radius:8px;
+      width:100%; cursor:pointer; margin-top:4px;
+    }
+    .btn-primary:active { opacity:0.8; }
+
+    .btn-secondary {
+      background:transparent; color:var(--grey); border:1px solid var(--border);
+      font-family:var(--font); font-size:0.8rem; letter-spacing:2px;
+      padding:10px 18px; border-radius:6px; cursor:pointer;
+    }
+    .btn-secondary:active { border-color:var(--gold); color:var(--gold); }
+
+    .setup-note {
+      text-align:center; color:var(--grey); font-size:0.7rem;
+      letter-spacing:1px; padding:10px 0; line-height:1.6;
+    }
+
+    /* ═══════════════════════════════════════════
+       PLAY SCREEN
+    ═══════════════════════════════════════════ */
+
+    /* Top stats bar */
+    .top-bar {
+      display:flex; justify-content:space-between;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:10px 16px; margin-bottom:10px;
+    }
+    .stat { display:flex; flex-direction:column; align-items:center; }
+    .stat-label { color:var(--grey); font-size:0.6rem; letter-spacing:2px; }
+    .stat-value { color:var(--gold); font-size:1.6rem; font-weight:700; line-height:1.1; }
+    .stat-value.good { color:var(--green); }
+    .stat-value.warn { color:var(--gold); }
+    .stat-value.bad  { color:var(--red); }
+
+    /* Phase banner */
+    .phase-banner {
+      text-align:center; font-size:1.4rem; font-weight:700;
+      letter-spacing:4px; padding:12px; border-radius:8px;
+      margin-bottom:10px; transition:all 0.3s ease;
+    }
+    .phase-banner.come-out {
+      background:rgba(0,230,118,0.08); color:var(--green);
+      border:1px solid rgba(0,230,118,0.25);
+    }
+    .phase-banner.point {
+      background:rgba(240,192,64,0.08); color:var(--gold);
+      border:1px solid rgba(240,192,64,0.25);
+    }
+
+    /* Dice display */
+    .dice-row {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:16px; margin-bottom:10px; text-align:center;
+    }
+    .dice-faces {
+      display:flex; align-items:center; justify-content:center;
+      gap:8px; margin-bottom:8px;
+    }
+    .die {
+      background:var(--border); border-radius:8px;
+      width:60px; height:60px; display:flex;
+      align-items:center; justify-content:center;
+      font-size:2rem; font-weight:700; font-family:var(--mono);
+    }
+    .die.total {
+      background:var(--gold); color:var(--black);
+      width:70px; height:70px; font-size:2.4rem;
+    }
+    .die-op { color:var(--grey); font-size:1.3rem; }
+    .result-type {
+      color:var(--gold-dim); font-size:0.8rem;
+      letter-spacing:3px; text-transform:uppercase;
+    }
+    .result-type.winner { color:var(--green); }
+    .result-type.loser  { color:var(--red); }
+
+    /* Mic button */
+    .mic-section {
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; flex:1; gap:12px;
+    }
+    .mic-btn {
+      background:var(--surface); border:3px solid var(--border);
+      border-radius:50%; width:110px; height:110px;
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; cursor:pointer; gap:4px;
+      transition:all 0.2s ease;
+    }
+    .mic-btn.listening {
+      border-color:var(--green); background:rgba(0,230,118,0.08);
+      animation:pulse 1.5s infinite;
+    }
+    .mic-btn.error {
+      border-color:var(--red); background:rgba(255,23,68,0.08);
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow:0 0 0 0 rgba(0,230,118,0.3); }
+      50%      { box-shadow:0 0 0 16px rgba(0,230,118,0); }
+    }
+    .mic-icon  { font-size:2.2rem; }
+    .mic-status {
+      color:var(--grey); font-size:0.6rem; letter-spacing:2px;
+      text-transform:uppercase;
+    }
+    .heard-text {
+      color:var(--grey); font-family:var(--mono); font-size:0.8rem;
+      min-height:18px; text-align:center; letter-spacing:1px;
+    }
+
+    /* Alert banner */
+    .alert-bar {
+      border-radius:8px; padding:10px 14px; text-align:center;
+      font-size:0.8rem; letter-spacing:1px; text-transform:uppercase;
+      transition:all 0.3s; margin-bottom:8px;
+    }
+    .alert-bar.hidden  { display:none; }
+    .alert-bar.info    { background:rgba(0,230,118,0.1); color:var(--green); border:1px solid rgba(0,230,118,0.3); }
+    .alert-bar.warning { background:rgba(240,192,64,0.1); color:var(--gold); border:1px solid rgba(240,192,64,0.3); }
+    .alert-bar.alert   { background:rgba(255,23,68,0.1); color:var(--red); border:1px solid rgba(255,23,68,0.3); }
+
+    /* Bottom bar */
+    .bottom-bar {
+      display:flex; justify-content:space-between;
+      align-items:center; padding-top:8px; gap:8px;
+    }
+    .set-badge {
+      color:var(--grey); font-size:0.7rem; letter-spacing:1px;
+      text-transform:uppercase;
+    }
+
+    /* ═══════════════════════════════════════════
+       STATS SCREEN
+    ═══════════════════════════════════════════ */
+    .stats-header {
+      text-align:center; font-size:1.3rem; font-weight:700;
+      color:var(--gold); letter-spacing:4px; padding:16px 0;
+      border-bottom:1px solid var(--border); margin-bottom:16px;
+      text-transform:uppercase;
+    }
+    .stats-tabs {
+      display:flex; gap:8px; margin-bottom:16px;
+    }
+    .tab {
+      flex:1; padding:10px; text-align:center; border-radius:6px;
+      font-family:var(--font); font-size:0.8rem; letter-spacing:2px;
+      cursor:pointer; border:1px solid var(--border); color:var(--grey);
+      background:transparent;
+    }
+    .tab.active { background:var(--gold); color:var(--black); border-color:var(--gold); }
+
+    .stats-content { flex:1; overflow-y:auto; padding-bottom:16px; }
+
+    .stat-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 0; border-bottom:1px solid var(--border);
+    }
+    .stat-row-label { color:var(--grey); font-size:0.8rem; letter-spacing:2px; text-transform:uppercase; }
+    .stat-row-value { font-size:1.3rem; font-weight:700; font-family:var(--mono); }
+
+    .section-title {
+      color:var(--gold-dim); font-size:0.7rem; letter-spacing:2px;
+      text-transform:uppercase; padding:14px 0 6px;
+    }
+    .sig-row {
+      display:flex; justify-content:space-between;
+      padding:8px 0; border-bottom:1px solid var(--border);
+      font-family:var(--mono); font-size:0.9rem;
+    }
+    .sig-hot  { color:var(--green); }
+    .sig-cold { color:var(--red); }
+
+    .die-freq-grid {
+      display:grid; grid-template-columns:repeat(6,1fr); gap:6px;
+      margin:8px 0 16px;
+    }
+    .die-freq-cell {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:6px; padding:8px 4px; text-align:center;
+    }
+    .die-freq-face { font-size:1.1rem; font-weight:700; color:var(--white); }
+    .die-freq-count { font-size:0.65rem; color:var(--grey); letter-spacing:1px; }
+
+    .stats-bottom {
+      padding: 8px 0 4px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .export-btn {
+      background:var(--surface); color:var(--gold); border:1px solid var(--gold-dim);
+      font-family:var(--font); font-size:0.8rem; letter-spacing:2px;
+      padding:12px; border-radius:8px; width:100%; cursor:pointer;
+      margin-top:12px; text-transform:uppercase;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SETUP SCREEN                               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="setup-screen" class="screen active">
+    <div class="logo">🎲 DiceIQ</div>
+    <div class="tagline">Tom's Performance Engine</div>
+
+    <div class="setup-form">
+      <div class="form-label">Dice Set</div>
+      <select id="dice-set" class="form-control">
+        <option value="Hardway">Hardway Set</option>
+        <option value="All7s">All 7s Set</option>
+        <option value="3V">3-V Set</option>
+        <option value="2V">2-V Set</option>
+      </select>
+
+      <div class="form-label">Location</div>
+      <input type="text" id="location" class="form-control" value="Ship Casino">
+
+      <div class="form-label">Starting Bankroll ($)</div>
+      <input type="number" id="bankroll-start" class="form-control" placeholder="e.g. 500" inputmode="numeric">
+
+      <button class="btn-primary" onclick="startSession()">START SESSION</button>
+      <button class="btn-secondary" style="width:100%;margin-top:4px;" onclick="showImportScreen()">
+        📷 IMPORT FROM PHOTO
+      </button>
+      <button class="btn-secondary" style="width:100%;margin-top:4px;" onclick="showScreen('stats')">
+        VIEW CRUISE STATS
+      </button>
+    </div>
+
+    <div class="setup-note">
+      Add to iPhone Home Screen for best experience<br>
+      Keep screen awake while playing
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PLAY SCREEN                                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="play-screen" class="screen">
+
+    <div class="top-bar">
+      <div class="stat">
+        <div class="stat-label">SRR</div>
+        <div class="stat-value" id="srr-val">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">ROLLS</div>
+        <div class="stat-value" id="roll-val">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">HAND #</div>
+        <div class="stat-value" id="hand-val">1</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">AXIS</div>
+        <div class="stat-value" id="axis-val">—</div>
+      </div>
+    </div>
+
+    <div id="phase-banner" class="phase-banner come-out">COME OUT</div>
+
+    <div class="dice-row">
+      <div class="dice-faces">
+        <div class="die" id="left-die">—</div>
+        <div class="die-op">+</div>
+        <div class="die" id="right-die">—</div>
+        <div class="die-op">=</div>
+        <div class="die total" id="total-die">—</div>
+      </div>
+      <div class="result-type" id="result-label">WAITING FOR ROLL</div>
+    </div>
+
+    <div class="alert-bar hidden" id="alert-bar"></div>
+
+    <div class="mic-section">
+      <div class="mic-btn" id="mic-btn" onclick="toggleListening()">
+        <div class="mic-icon">🎤</div>
+        <div class="mic-status" id="mic-status">TAP TO START</div>
+      </div>
+      <div class="heard-text" id="heard-text"></div>
+    </div>
+
+    <div class="bottom-bar">
+      <button class="btn-secondary" onclick="promptEndSession()">END SESSION</button>
+      <div class="set-badge" id="set-badge">—</div>
+      <button class="btn-secondary" onclick="showScreen('stats')">STATS</button>
+    </div>
+
+  </div>
+
+  <!-- END SESSION MODAL -->
+  <div id="end-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.92);z-index:100;display:none;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:24px;width:100%;">
+      <div style="color:#f0c040;font-size:1rem;letter-spacing:3px;text-align:center;margin-bottom:20px;">END SESSION</div>
+      <div style="color:#a07820;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Ending Bankroll ($)</div>
+      <input type="number" id="bankroll-end" class="form-control" placeholder="How much you walked away with" inputmode="numeric" style="margin-bottom:16px;">
+      <button class="btn-primary" onclick="confirmEndSession()">CONFIRM & SAVE</button>
+      <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="cancelEndSession()">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STATS SCREEN                               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="stats-screen" class="screen">
+    <div class="stats-header">Analytics</div>
+
+    <div class="stats-tabs">
+      <button class="tab active" id="tab-session" onclick="switchTab('session')">SESSION</button>
+      <button class="tab" id="tab-lifetime" onclick="switchTab('lifetime')">CRUISE</button>
+    </div>
+
+    <div class="stats-bottom">
+      <button class="export-btn" onclick="exportData()">⬆ EXPORT SESSION DATA</button>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn-secondary" style="flex:1;" onclick="goBack()">← BACK</button>
+        <button class="btn-primary" style="flex:1;padding:10px;" onclick="newSession()">NEW SESSION</button>
+      </div>
+    </div>
+
+    <div class="stats-content" id="stats-content"></div>
+  </div>
+
+  <script>
+
+    // ═══════════════════════════════════════════════════════
+    // KEEP AWAKE — prevents iPhone screen from sleeping
+    // ═══════════════════════════════════════════════════════
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch(e) {
+        // WakeLock not supported — fallback: user sets Auto-Lock to Never
+        console.log('WakeLock not available');
+      }
+    }
+    document.addEventListener('visibilitychange', async () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // DICE SET DEFINITIONS
+    // Top face + all 4 on-axis faces per set
+    // Source: Golden Touch Craps, BoneTracker methodology
+    // ═══════════════════════════════════════════════════════
+    const DICE_SETS = {
+      'Hardway': {
+        name: 'Hardway Set',
+        // Primary axis: 3-4 on top, 1-6 on sides, 2-5 front/back
+        // 7 requires TWO face movements — best protection
+        left:  { top:3, front:2, onAxis:[3,4], pitch90:[2,5], pitch180:[4,3] },
+        right: { top:4, front:2, onAxis:[3,4], pitch90:[2,5], pitch180:[4,3] },
+        targetNumbers: [4,6,8,10], // Hardways + outside numbers
+        sevenProtection: 'HIGH - requires 2 face movements',
+      },
+      'All7s': {
+        name: 'All 7s Set',
+        // 7 on all four sides — maximize come-out wins
+        left:  { top:3, front:4, onAxis:[3,4], pitch90:[1,6], pitch180:[4,3] },
+        right: { top:4, front:3, onAxis:[3,4], pitch90:[1,6], pitch180:[4,3] },
+        targetNumbers: [7,11], // Come-out winners
+        sevenProtection: 'NONE - designed to hit 7',
+      },
+      '3V': {
+        name: '3-V Set',
+        // 3s in V formation on top - targets 6 and 8
+        left:  { top:3, front:2, onAxis:[3,6], pitch90:[2,5], pitch180:[4,1] },
+        right: { top:3, front:5, onAxis:[3,6], pitch90:[2,5], pitch180:[4,1] },
+        targetNumbers: [6,8],
+        sevenProtection: 'MEDIUM - one face movement = seven',
+      },
+      '2V': {
+        name: '2-V Set',
+        // 2s in V formation on top - targets 4 and 10
+        left:  { top:2, front:4, onAxis:[2,5], pitch90:[4,3], pitch180:[5,2] },
+        right: { top:2, front:3, onAxis:[2,5], pitch90:[4,3], pitch180:[5,2] },
+        targetNumbers: [4,10],
+        sevenProtection: 'MEDIUM - one face movement = seven',
+      },
+    };
+
+    // On-axis outcome map — given a set, what totals are on-axis?
+    // Used for BSR and transpose analysis
+    const ON_AXIS_TOTALS = {
+      'Hardway': [4,6,8,10],   // Hardway numbers
+      'All7s':   [7,11,2,12],  // Come-out numbers
+      '3V':      [6,8,5,9],    // Inside numbers
+      '2V':      [4,10,5,9],   // Outside numbers
+    };
+
+    // Expected frequency per 36 rolls
+    const EXPECTED = { 2:1,3:2,4:3,5:4,6:5,7:6,8:5,9:4,10:3,11:2,12:1 };
+
+    // ═══════════════════════════════════════════════════════
+    // GAME STATE
+    // ═══════════════════════════════════════════════════════
+    let state = {
+      sessionId:    null,
+      handNumber:   1,
+      handRolls:    0,
+      phase:        'come_out',
+      currentPoint: null,
+      rollCount:    0,
+      isActive:     false,
+      isListening:  false,
+      diceSet:      'Hardway',
+      location:     'Ship Casino',
+      rolls:        [],
+      hands:        [],
+      currentTab:   'session',
+      lastDiagRoll: 0,
+      lastDiagMsg:  '',
+      bankrollStart: 0,
+      bankrollEnd:   0,
+    };
+
+    // ═══════════════════════════════════════════════════════
+    // STORAGE — localStorage, works offline forever
+    // ═══════════════════════════════════════════════════════
+    const DB = {
+      save(key, data) {
+        try { localStorage.setItem('diceiq_' + key, JSON.stringify(data)); }
+        catch(e) { console.error('Storage full', e); }
+      },
+      load(key, fallback = null) {
+        try {
+          const d = localStorage.getItem('diceiq_' + key);
+          return d ? JSON.parse(d) : fallback;
+        } catch(e) { return fallback; }
+      },
+      getAllSessions() { return this.load('sessions', []); },
+      saveSession(session) {
+        const sessions = this.getAllSessions();
+        const idx = sessions.findIndex(s => s.id === session.id);
+        if (idx >= 0) sessions[idx] = session;
+        else sessions.push(session);
+        this.save('sessions', sessions);
+      },
+    };
+
+    // ═══════════════════════════════════════════════════════
+    // ANALYTICS ENGINE
+    // All the math — SRR, axis, signatures, diagnostics
+    // ═══════════════════════════════════════════════════════
+    const Engine = {
+
+      // BSR — Box to Sevens Ratio
+      // How often you hit box numbers vs sevens
+      // More meaningful than SRR for profitability
+      bsr(rolls) {
+        const boxNumbers = [4,5,6,8,9,10];
+        const boxHits = rolls.filter(r => boxNumbers.includes(r.total)).length;
+        const sevens  = rolls.filter(r => r.total === 7).length;
+        if (sevens === 0) return null;
+        return (boxHits / sevens).toFixed(2);
+      },
+
+      // ROTATION ANALYSIS — per die, per set
+      // Determines how far each die rotated from declared set
+      analyzeRotation(left, right, diceSet) {
+        const setDef = DICE_SETS[diceSet];
+        if (!setDef) return { leftRotation:'unknown', rightRotation:'unknown' };
+
+        const leftRotation  = this.getDieRotation(left,  setDef.left);
+        const rightRotation = this.getDieRotation(right, setDef.right);
+
+        return {
+          leftRotation,
+          rightRotation,
+          leftOnAxis:  leftRotation  === 'on_axis',
+          rightOnAxis: rightRotation === 'on_axis',
+          bothOnAxis:  leftRotation  === 'on_axis' && rightRotation === 'on_axis',
+        };
+      },
+
+      getDieRotation(face, setFaceDef) {
+        if (setFaceDef.onAxis.includes(face))   return 'on_axis';
+        if (setFaceDef.pitch90.includes(face))  return 'pitch_90';
+        if (setFaceDef.pitch180.includes(face)) return 'pitch_180';
+        return 'off_axis'; // Went sideways completely
+      },
+
+      // ROTATION STATS — aggregate across all rolls
+      rotationStats(rolls) {
+        if (!rolls.length) return null;
+        const left  = { on_axis:0, pitch_90:0, pitch_180:0, off_axis:0 };
+        const right = { on_axis:0, pitch_90:0, pitch_180:0, off_axis:0 };
+
+        rolls.forEach(r => {
+          const rot = this.analyzeRotation(r.left, r.right, r.diceSet);
+          left[rot.leftRotation]++;
+          right[rot.rightRotation]++;
+        });
+
+        const total = rolls.length;
+        return {
+          left: {
+            onAxisPct:   ((left.on_axis  / total) * 100).toFixed(1),
+            pitch90Pct:  ((left.pitch_90 / total) * 100).toFixed(1),
+            pitch180Pct: ((left.pitch_180/ total) * 100).toFixed(1),
+            offAxisPct:  ((left.off_axis / total) * 100).toFixed(1),
+          },
+          right: {
+            onAxisPct:   ((right.on_axis  / total) * 100).toFixed(1),
+            pitch90Pct:  ((right.pitch_90 / total) * 100).toFixed(1),
+            pitch180Pct: ((right.pitch_180/ total) * 100).toFixed(1),
+            offAxisPct:  ((right.off_axis / total) * 100).toFixed(1),
+          },
+          bothOnAxisPct: (rolls.filter(r => {
+            const rot = this.analyzeRotation(r.left, r.right, r.diceSet);
+            return rot.bothOnAxis;
+          }).length / total * 100).toFixed(1),
+        };
+      },
+
+      // TRANSPOSE ANALYSIS
+      // Tells Tom which set gives him the best results
+      // based on his actual throw data — not theory
+      transposeAnalysis(rolls) {
+        if (rolls.length < 30) return null;
+
+        const setStats = {};
+        Object.keys(DICE_SETS).forEach(setName => {
+          const setRolls = rolls.filter(r => r.diceSet === setName);
+          if (setRolls.length < 10) return;
+          setStats[setName] = {
+            rolls:      setRolls.length,
+            srr:        this.srr(setRolls),
+            bsr:        this.bsr(setRolls),
+            axis:       this.axisPct(setRolls),
+            signatures: this.signatureNumbers(setRolls).slice(0,3),
+          };
+        });
+        return setStats;
+      },
+
+      // PER-SET BREAKDOWN
+      perSetStats(rolls) {
+        const sets = {};
+        Object.keys(DICE_SETS).forEach(setName => {
+          const setRolls = rolls.filter(r => r.diceSet === setName);
+          if (!setRolls.length) return;
+          sets[setName] = {
+            rolls: setRolls.length,
+            srr:   this.srr(setRolls)   || '—',
+            bsr:   this.bsr(setRolls)   || '—',
+            axis:  this.axisPct(setRolls),
+          };
+        });
+        return sets;
+      },
+
+      srr(rolls) {
+        const total  = rolls.length;
+        const sevens = rolls.filter(r => r.total === 7).length;
+        if (sevens === 0) return null;
+        return (total / sevens).toFixed(2);
+      },
+
+      axisPct(rolls) {
+        if (!rolls.length) return 0;
+        const doubles = rolls.filter(r => r.left === r.right).length;
+        return ((doubles / rolls.length) * 100).toFixed(1);
+      },
+
+      signatureNumbers(rolls) {
+        if (rolls.length < 20) return [];
+        const counts = {};
+        for (let i = 2; i <= 12; i++) counts[i] = 0;
+        rolls.forEach(r => counts[r.total]++);
+        const results = [];
+        for (let n = 2; n <= 12; n++) {
+          const expected = (EXPECTED[n] / 36) * rolls.length;
+          const deviation = ((counts[n] - expected) / expected * 100).toFixed(1);
+          results.push({ number: n, actual: counts[n], expected: expected.toFixed(1), deviation: parseFloat(deviation) });
+        }
+        return results.sort((a,b) => b.deviation - a.deviation);
+      },
+
+      dieFrequency(rolls) {
+        const left = {1:0,2:0,3:0,4:0,5:0,6:0};
+        const right = {1:0,2:0,3:0,4:0,5:0,6:0};
+        rolls.forEach(r => { left[r.left]++; right[r.right]++; });
+        return { left, right };
+      },
+
+      fatigueCurve(rolls) {
+        // Split rolls into windows of 20 and calc SRR per window
+        const windows = [];
+        for (let i = 0; i < rolls.length; i += 20) {
+          const window = rolls.slice(i, i + 20);
+          if (window.length >= 10) {
+            windows.push({
+              start: i + 1,
+              end:   i + window.length,
+              srr:   this.srr(window) || '—',
+              axis:  this.axisPct(window),
+            });
+          }
+        }
+        return windows;
+      },
+
+      handStats(hands) {
+        const completed = hands.filter(h => h.outcome === 'seven_out' || h.outcome === 'point_made');
+        if (!completed.length) return { avg: 0, longest: 0, pointsMade: 0 };
+        const lengths   = completed.map(h => h.rolls);
+        const pointsMade = hands.filter(h => h.outcome === 'point_made').length;
+        return {
+          avg:        (lengths.reduce((a,b) => a+b, 0) / lengths.length).toFixed(1),
+          longest:    Math.max(...lengths),
+          pointsMade,
+        };
+      },
+
+      // Real-time diagnostic — called after every roll
+      diagnose(rolls, handRolls, rollNumber) {
+        if (rolls.length < 10) return null;
+
+        // Don't repeat same diagnostic within 10 rolls
+        const lastFired = state.lastDiagRoll || 0;
+        const lastMsg   = state.lastDiagMsg  || '';
+        const cooldown  = 10;
+
+        function fire(level, message) {
+          // Same message — enforce cooldown
+          if (message === lastMsg && (rollNumber - lastFired) < cooldown) return null;
+          state.lastDiagRoll = rollNumber;
+          state.lastDiagMsg  = message;
+          return { level, message };
+        }
+
+        // Seven spike — 3 sevens in last 10
+        const last10   = rolls.slice(-10);
+        const sevSpike = last10.filter(r => r.total === 7).length;
+        if (sevSpike >= 3) {
+          return fire('alert', 'Three sevens in last ten - check your set');
+        }
+
+        // Fatigue window — only fire once at each 40-roll mark
+        if (rollNumber > 0 && rollNumber % 40 === 0) {
+          return fire('warning', `${rollNumber} rolls - fatigue window`);
+        }
+
+        // SRR drop — only fire once per 15 rolls when low
+        const srr = parseFloat(this.srr(rolls));
+        if (srr && srr < 6.0 && rolls.length >= 20) {
+          return fire('warning', `SRR at ${srr} - below target`);
+        }
+
+        // Axis drop
+        const axis = parseFloat(this.axisPct(rolls));
+        if (axis < 16.7 && rolls.length >= 20) {
+          return fire('warning', `Axis at ${axis}% - check finger pressure`);
+        }
+
+        // Signature number emerging
+        if (rolls.length >= 30) {
+          const sigs = this.signatureNumbers(rolls);
+          if (sigs.length && sigs[0].deviation >= 25) {
+            return fire('info', `${sigs[0].number} running hot`);
+          }
+        }
+
+        return null;
+      },
+
+      classifyRoll(left, right, phase, point) {
+        const total    = left + right;
+        const isDouble = left === right;
+        if (phase === 'come_out') {
+          if ([7,11].includes(total))   return { type:'natural',   total, isDouble, haptic:'single', audio:`${total} — winner` };
+          if ([2,3,12].includes(total)) return { type:'craps',     total, isDouble, haptic:'single', audio:`Craps — ${total}` };
+          return                               { type:'point_set', total, isDouble, haptic:'single', audio:`Point is ${total}` };
+        } else {
+          if (total === 7)     return { type:'seven_out',  total, isDouble, haptic:'long',   audio:'Seven out' };
+          if (total === point) return { type:'point_made', total, isDouble, haptic:'triple', audio:`Point made — ${total}` };
+          return                     { type:'number',      total, isDouble, haptic:'single', audio:`${total}` };
+        }
+      },
+    };
+
+    // ═══════════════════════════════════════════════════════
+    // VOICE PARSER
+    // ═══════════════════════════════════════════════════════
+    const CORRECTIONS = {
+      'tree':'three','free':'three','tee':'three',
+      'for':'four','fore':'four','fur':'four',
+      'fife':'five','hive':'five',
+      'sex':'six','sick':'six',
+      'won':'one','wan':'one',
+      'too':'two','to':'two',
+      'ate':'eight','ait':'eight',
+      'nin':'nine','nein':'nine',
+    };
+
+    // Handles BOTH word form ("three two") AND numeral form ("3 2")
+    const WORD_NUM = {
+      'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,
+      'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,
+      '1':1,'2':2,'3':3,'4':4,'5':5,'6':6,
+      '7':7,'8':8,'9':9,'10':10,'11':11,'12':12
+    };
+    const POINT_NUMS = [4,5,6,8,9,10];
+
+    function parseVoice(raw) {
+      if (!raw) return null;
+      console.log('Heard:', raw);
+
+      const words = raw.toLowerCase().trim().split(/\s+/)
+                       .map(w => CORRECTIONS[w] || w);
+
+      // Come out
+      if ((words[0]==='come' && words[1]==='out') || words[0]==='comeout')
+        return { type:'come_out' };
+
+      // Seven out
+      if (words[0]==='seven' && words[1]==='out')
+        return { type:'seven_out' };
+
+      // Set changes
+      if (words[0]==='hardway' || (words[0]==='hard' && words[1]==='way'))
+        return { type:'set_change', set:'Hardway' };
+      if (words[0]==='three' && words[1]==='set')
+        return { type:'set_change', set:'3V' };
+      if (words[0]==='two' && words[1]==='set')
+        return { type:'set_change', set:'2V' };
+
+      // Point set: "point eight" or "point 8"
+      if (words[0]==='point' && words.length===2) {
+        const n = WORD_NUM[words[1]];
+        if (n && POINT_NUMS.includes(n)) return { type:'point_set', point:n };
+      }
+
+      // Roll: single token "32"
+      if (words.length===1 && words[0].length===2) {
+        const l = parseInt(words[0][0]);
+        const r = parseInt(words[0][1]);
+        if (l>=1 && l<=6 && r>=1 && r<=6)
+          return { type:'roll', left:l, right:r };
+      }
+
+      // Roll: "three two" OR "3 2"
+      if (words.length===2) {
+        const l = WORD_NUM[words[0]];
+        const r = WORD_NUM[words[1]];
+        if (l && r && l>=1 && l<=6 && r>=1 && r<=6)
+          return { type:'roll', left:l, right:r };
+      }
+
+      return null;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // HAPTICS
+    // ═══════════════════════════════════════════════════════
+    function haptic(type) {
+      if (!navigator.vibrate) return;
+      const p = { single:[40], long:[200], triple:[60,80,60,80,60], double:[80,60,80] };
+      navigator.vibrate(p[type] || p.single);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SPEECH — whispers to hearing aids
+    // ═══════════════════════════════════════════════════════
+    function speak(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate   = 0.85;
+      u.volume = 0.9;
+      u.pitch  = 1.0;
+      window.speechSynthesis.speak(u);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SPEECH RECOGNITION
+    // ═══════════════════════════════════════════════════════
+    let recognition = null;
+
+    function initSpeech() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { alert('Voice recognition not supported in this browser. Use Safari on iPhone.'); return false; }
+
+      recognition = new SR();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 3;
+
+      recognition.onresult = async (e) => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('heard-text').textContent = '"' + text + '"';
+        await processVoice(text);
+      };
+
+      recognition.onerror = (e) => {
+        console.log('Speech error:', e.error);
+        if (state.isActive && state.isListening) setTimeout(startListening, 600);
+      };
+
+      recognition.onend = () => {
+        if (state.isActive && state.isListening) setTimeout(startListening, 300);
+        else setMicState('idle');
+      };
+
+      return true;
+    }
+
+    function toggleListening() {
+      if (!state.isActive) return;
+      state.isListening ? stopListening() : startListening();
+    }
+
+    function startListening() {
+      if (!recognition || !state.isActive) return;
+      try { recognition.start(); state.isListening = true; setMicState('listening'); }
+      catch(e) {}
+    }
+
+    function stopListening() {
+      state.isListening = false;
+      if (recognition) recognition.stop();
+      setMicState('idle');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // VOICE PROCESSOR — the main loop
+    // ═══════════════════════════════════════════════════════
+    async function processVoice(raw) {
+      const cmd = parseVoice(raw);
+
+      if (!cmd) {
+        haptic('double');
+        speak('Repeat that');
+        document.getElementById('heard-text').textContent = '? ' + raw;
+        return;
+      }
+
+      if (cmd.type === 'set_change') {
+        state.diceSet = cmd.set;
+        document.getElementById('set-badge').textContent = cmd.set;
+        haptic('single');
+        speak(`${cmd.set} set`);
+        return;
+      }
+
+      if (cmd.type === 'come_out') {
+        state.phase = 'come_out';
+        state.currentPoint = null;
+        updatePhaseBanner();
+        haptic('single');
+        speak('Come out');
+        return;
+      }
+
+      if (cmd.type === 'seven_out') {
+        closeHand('seven_out');
+        updateUI();
+        haptic('long');
+        speak('Seven out');
+        return;
+      }
+
+      if (cmd.type === 'point_set') {
+        state.phase = 'point';
+        state.currentPoint = cmd.point;
+        updatePhaseBanner();
+        haptic('single');
+        speak(`Point is ${cmd.point}`);
+        return;
+      }
+
+      if (cmd.type === 'roll') {
+        const result = Engine.classifyRoll(cmd.left, cmd.right, state.phase, state.currentPoint);
+
+        // Log the roll with full rotation analysis
+        const rotation = Engine.analyzeRotation(cmd.left, cmd.right, state.diceSet);
+        const roll = {
+          id:           Date.now(),
+          sessionId:    state.sessionId,
+          rollNum:      ++state.rollCount,
+          handNum:      state.handNumber,
+          left:         cmd.left,
+          right:        cmd.right,
+          total:        result.total,
+          isDouble:     result.isDouble,
+          diceSet:      state.diceSet,
+          phase:        state.phase,
+          point:        state.currentPoint,
+          type:         result.type,
+          leftRotation: rotation.leftRotation,
+          rightRotation:rotation.rightRotation,
+          bothOnAxis:   rotation.bothOnAxis,
+          ts:           new Date().toISOString(),
+        };
+        state.rolls.push(roll);
+        state.handRolls++;
+
+        // Handle state changes
+        if (result.type === 'point_set') {
+          state.phase = 'point';
+          state.currentPoint = result.total;
+        } else if (result.type === 'seven_out') {
+          closeHand('seven_out');
+        } else if (result.type === 'point_made') {
+          closeHand('point_made');
+          state.phase = 'come_out';
+          state.currentPoint = null;
+        } else if (result.type === 'natural' || result.type === 'craps') {
+          // Stay on come-out
+        }
+
+        // Update UI
+        updateDiceDisplay(cmd.left, cmd.right, result.total, result.type);
+        updateStats();
+        updatePhaseBanner();
+        saveCurrentSession();
+
+        // Haptic first — immediate
+        haptic(result.haptic);
+
+        // Audio confirmation
+        speak(result.audio);
+
+        // Diagnostic — slight delay
+        const diag = Engine.diagnose(state.rolls, state.handRolls, state.rollCount);
+        if (diag) {
+          showAlert(diag.message, diag.level);
+          setTimeout(() => speak(diag.message), 1200);
+          // Log the alert for outcome tracking
+          state.alerts = state.alerts || [];
+          state.alerts.push({
+            rollNum:   state.rollCount,
+            handNum:   state.handNumber,
+            type:      diag.level,
+            message:   diag.message,
+            phase:     state.phase,
+            total:     result.total,
+            srr:       Engine.srr(state.rolls),
+            axis:      Engine.axisPct(state.rolls),
+            outcome:   null, // filled in when hand ends
+            ts:        new Date().toISOString(),
+          });
+        } else {
+          hideAlert();
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SESSION MANAGEMENT
+    // ═══════════════════════════════════════════════════════
+    function startSession() {
+      state.diceSet      = document.getElementById('dice-set').value;
+      state.location     = document.getElementById('location').value;
+      state.bankrollStart= parseFloat(document.getElementById('bankroll-start').value) || 0;
+      state.bankrollEnd  = 0;
+      state.sessionId    = Date.now();
+      state.handNumber   = 1;
+      state.handRolls    = 0;
+      state.phase        = 'come_out';
+      state.currentPoint = null;
+      state.rollCount    = 0;
+      state.isActive     = true;
+      state.rolls        = [];
+      state.hands        = [{ num:1, rolls:0, outcome:'in_progress', point:null }];
+      state.lastDiagRoll = 0;
+      state.lastDiagMsg  = '';
+
+      document.getElementById('set-badge').textContent = state.diceSet;
+      showScreen('play');
+      requestWakeLock();
+      initSpeech();
+      startListening();
+      speak('Session started. Good shooting.');
+    }
+
+    function closeHand(outcome) {
+      const hand = state.hands.find(h => h.num === state.handNumber);
+      if (hand) { hand.rolls = state.handRolls; hand.outcome = outcome; hand.point = state.currentPoint; }
+
+      // Fill in outcome for any alerts that fired this hand
+      if (state.alerts) {
+        state.alerts
+          .filter(a => a.handNum === state.handNumber && a.outcome === null)
+          .forEach(a => {
+            a.outcome      = outcome;
+            a.rollsAfter   = state.rollCount - a.rollNum;
+            a.sevenOutSoon = outcome === 'seven_out' && a.rollsAfter <= 3;
+          });
+      }
+
+      state.handNumber++;
+      state.handRolls = 0;
+      state.phase = 'come_out';
+      state.currentPoint = null;
+      state.hands.push({ num:state.handNumber, rolls:0, outcome:'in_progress', point:null });
+    }
+
+    function promptEndSession() {
+      document.getElementById('bankroll-end').value = '';
+      document.getElementById('end-modal').style.display = 'flex';
+    }
+
+    function cancelEndSession() {
+      document.getElementById('end-modal').style.display = 'none';
+    }
+
+    function confirmEndSession() {
+      const endVal = parseFloat(document.getElementById('bankroll-end').value) || 0;
+      state.bankrollEnd = endVal;
+      document.getElementById('end-modal').style.display = 'none';
+      endSession();
+    }
+
+    function endSession() {
+      state.isActive = false;
+      state.isListening = false;
+      stopListening();
+      saveCurrentSession();
+      state.currentTab = 'session';
+      showScreen('stats');
+      renderStats('session');
+    }
+
+    function newSession() {
+      state.sessionId    = null;
+      state.handId       = null;
+      state.handNumber   = 1;
+      state.phase        = 'come_out';
+      state.currentPoint = null;
+      state.rollCount    = 0;
+      state.isActive     = false;
+      state.rolls        = [];
+      state.hands        = [];
+      showScreen('setup');
+    }
+
+    function saveCurrentSession() {
+      if (!state.sessionId) return;
+      const session = {
+        id:            state.sessionId,
+        date:          new Date().toLocaleDateString(),
+        time:          new Date().toLocaleTimeString(),
+        diceSet:       state.diceSet,
+        location:      state.location,
+        bankrollStart: state.bankrollStart,
+        bankrollEnd:   state.bankrollEnd,
+        pnl:           state.bankrollEnd - state.bankrollStart,
+        rolls:         state.rolls,
+        hands:         state.hands,
+        alerts:        state.alerts || [],
+      };
+      DB.saveSession(session);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // UI UPDATES
+    // ═══════════════════════════════════════════════════════
+    function updateDiceDisplay(left, right, total, type) {
+      document.getElementById('left-die').textContent  = left;
+      document.getElementById('right-die').textContent = right;
+      document.getElementById('total-die').textContent = total;
+
+      const labels = {
+        natural:'★ WINNER', craps:'CRAPS', point_set:'POINT SET',
+        point_made:'★ POINT MADE', seven_out:'✕ SEVEN OUT', number: total.toString()
+      };
+      const el = document.getElementById('result-label');
+      el.textContent = labels[type] || type;
+      el.className   = 'result-type' +
+        (['natural','point_made'].includes(type) ? ' winner' : '') +
+        (type === 'seven_out' ? ' loser' : '');
+    }
+
+    function updateStats() {
+      const srr  = Engine.srr(state.rolls);
+      const axis = Engine.axisPct(state.rolls);
+
+      const srrEl  = document.getElementById('srr-val');
+      const axisEl = document.getElementById('axis-val');
+
+      srrEl.textContent  = srr  ? `1:${srr}`  : '—';
+      axisEl.textContent = axis ? `${axis}%`   : '—';
+
+      srrEl.className  = 'stat-value' + (srr  > 6 ? ' good' : srr  > 5 ? ' warn' : srr  ? ' bad' : '');
+      axisEl.className = 'stat-value' + (axis > 25 ? ' good' : axis > 16 ? ' warn' : axis ? ' bad' : '');
+
+      document.getElementById('roll-val').textContent = state.rollCount;
+      document.getElementById('hand-val').textContent = state.handNumber;
+    }
+
+    function updatePhaseBanner() {
+      const el = document.getElementById('phase-banner');
+      if (state.phase === 'come_out') {
+        el.textContent = 'COME OUT';
+        el.className   = 'phase-banner come-out';
+      } else {
+        el.textContent = `POINT  ${state.currentPoint}`;
+        el.className   = 'phase-banner point';
+      }
+    }
+
+    function updateUI() { updateStats(); updatePhaseBanner(); }
+
+    function setMicState(s) {
+      document.getElementById('mic-btn').className    = 'mic-btn' + (s==='listening' ? ' listening' : s==='error' ? ' error' : '');
+      document.getElementById('mic-status').textContent = s==='listening' ? 'LISTENING...' : 'TAP TO START';
+    }
+
+    function showAlert(msg, level='warning') {
+      const el = document.getElementById('alert-bar');
+      el.textContent = msg.toUpperCase();
+      el.className   = 'alert-bar ' + level;
+    }
+
+    function hideAlert() {
+      document.getElementById('alert-bar').className = 'alert-bar hidden';
+    }
+
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(name + '-screen').classList.add('active');
+      if (name === 'stats') renderStats(state.currentTab);
+    }
+
+    function goBack() {
+      if (state.isActive) {
+        showScreen('play');
+        startListening();
+      } else {
+        showScreen('setup');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // STATS RENDERER
+    // ═══════════════════════════════════════════════════════
+    function switchTab(tab) {
+      state.currentTab = tab;
+      document.getElementById('tab-session').className  = 'tab' + (tab==='session'  ? ' active' : '');
+      document.getElementById('tab-lifetime').className = 'tab' + (tab==='lifetime' ? ' active' : '');
+      renderStats(tab);
+    }
+
+    function renderStats(tab) {
+      const el = document.getElementById('stats-content');
+      if (tab === 'session') el.innerHTML = renderSessionStats();
+      else                   el.innerHTML = renderLifetimeStats();
+    }
+
+    function renderSessionStats() {
+      const rolls = state.rolls;
+      if (!rolls.length) return '<div style="color:var(--grey);text-align:center;padding:40px 0;">No rolls in current session</div>';
+
+      const srr    = Engine.srr(rolls);
+      const bsr    = Engine.bsr(rolls);
+      const axis   = Engine.axisPct(rolls);
+      const hStats = Engine.handStats(state.hands);
+      const sigs   = Engine.signatureNumbers(rolls);
+      const freq   = Engine.dieFrequency(rolls);
+      const rot    = Engine.rotationStats(rolls);
+      const perSet = Engine.perSetStats(rolls);
+      const fatigue= Engine.fatigueCurve(rolls);
+      const pnl    = state.bankrollEnd - state.bankrollStart;
+      const pnlClass = pnl > 0 ? 'good' : pnl < 0 ? 'bad' : '';
+
+      const srrClass  = srr  > 6 ? 'good' : srr  > 5 ? 'warn' : 'bad';
+      const axisClass = axis > 25 ? 'good' : axis > 16 ? 'warn' : 'bad';
+      const bsrClass  = bsr  > 3 ? 'good' : bsr  > 2 ? 'warn' : 'bad';
+
+      let html = `
+        <div class="section-title">📊 SESSION OVERVIEW</div>
+        <div class="stat-row"><span class="stat-row-label">Total Rolls</span><span class="stat-row-value">${rolls.length}</span></div>
+        <div class="stat-row"><span class="stat-row-label">SRR</span><span class="stat-row-value ${srrClass}">1:${srr||'—'}</span></div>
+        <div class="stat-row"><span class="stat-row-label">BSR (Box:Sevens)</span><span class="stat-row-value ${bsrClass}">${bsr||'—'}:1</span></div>
+        <div class="stat-row"><span class="stat-row-label">Axis Control</span><span class="stat-row-value ${axisClass}">${axis}%</span></div>
+        <div class="stat-row"><span class="stat-row-label">Hands</span><span class="stat-row-value">${state.hands.length}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Points Made</span><span class="stat-row-value good">${hStats.pointsMade}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Avg Hand</span><span class="stat-row-value">${hStats.avg} rolls</span></div>
+        <div class="stat-row"><span class="stat-row-label">Longest Hand</span><span class="stat-row-value good">${hStats.longest} rolls</span></div>
+        ${state.bankrollStart > 0 ? `
+        <div class="section-title">💰 BANKROLL</div>
+        <div class="stat-row"><span class="stat-row-label">Started With</span><span class="stat-row-value">$${state.bankrollStart}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Walked Away</span><span class="stat-row-value">$${state.bankrollEnd}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Session P&L</span><span class="stat-row-value ${pnlClass}">${pnl >= 0 ? '+' : ''}$${pnl}</span></div>
+        ` : ''}
+      `;
+
+      // Per-set breakdown
+      if (Object.keys(perSet).length > 1) {
+        html += `<div class="section-title">🎲 BY DICE SET</div>`;
+        Object.entries(perSet).forEach(([name, s]) => {
+          html += `<div class="stat-row">
+            <span class="stat-row-label">${name}<br><span style="font-size:0.65rem">${s.rolls} rolls</span></span>
+            <span class="stat-row-value" style="text-align:right;font-size:0.9rem">SRR 1:${s.srr}<br>BSR ${s.bsr}:1 / ${s.axis}% axis</span>
+          </div>`;
+        });
+      }
+
+      // Rotation analysis
+      if (rot) {
+        html += `<div class="section-title">🔄 ROTATION ANALYSIS</div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Both On Axis</span><span class="stat-row-value ${rot.bothOnAxisPct > 25 ? 'good' : 'warn'}">${rot.bothOnAxisPct}%</span></div>`;
+
+        html += `<div class="section-title" style="font-size:0.65rem">LEFT DIE</div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">On Axis</span><span class="stat-row-value ${rot.left.onAxisPct > 40 ? 'good' : 'warn'}">${rot.left.onAxisPct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Pitch 90°</span><span class="stat-row-value">${rot.left.pitch90Pct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Pitch 180°</span><span class="stat-row-value ${rot.left.pitch180Pct > 15 ? 'bad' : ''}">${rot.left.pitch180Pct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Off Axis</span><span class="stat-row-value ${rot.left.offAxisPct > 20 ? 'bad' : ''}">${rot.left.offAxisPct}%</span></div>`;
+
+        html += `<div class="section-title" style="font-size:0.65rem">RIGHT DIE</div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">On Axis</span><span class="stat-row-value ${rot.right.onAxisPct > 40 ? 'good' : 'warn'}">${rot.right.onAxisPct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Pitch 90°</span><span class="stat-row-value">${rot.right.pitch90Pct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Pitch 180°</span><span class="stat-row-value ${rot.right.pitch180Pct > 15 ? 'bad' : ''}">${rot.right.pitch180Pct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Off Axis</span><span class="stat-row-value ${rot.right.offAxisPct > 20 ? 'bad' : ''}">${rot.right.offAxisPct}%</span></div>`;
+      }
+
+      // Signature numbers
+      if (sigs.length >= 3) {
+        html += `<div class="section-title">🔥 SIGNATURE NUMBERS</div>`;
+        sigs.slice(0,6).forEach(s => {
+          const cls = s.deviation > 15 ? 'sig-hot' : s.deviation < -15 ? 'sig-cold' : '';
+          html += `<div class="sig-row">
+            <span>Total ${s.number}</span>
+            <span class="${cls}">${s.deviation > 0 ? '+' : ''}${s.deviation}%</span>
+            <span style="color:var(--grey)">${s.actual} hits</span>
+          </div>`;
+        });
+      }
+
+      // Die frequency
+      html += `<div class="section-title">🎯 LEFT DIE FACE FREQUENCY</div>
+        <div class="die-freq-grid">`;
+      for (let i=1; i<=6; i++) {
+        const pct = rolls.length ? ((freq.left[i]/rolls.length)*100).toFixed(0) : 0;
+        html += `<div class="die-freq-cell">
+          <div class="die-freq-face">${i}</div>
+          <div class="die-freq-count">${freq.left[i]}</div>
+          <div class="die-freq-count">${pct}%</div>
+        </div>`;
+      }
+      html += `</div><div class="section-title">🎯 RIGHT DIE FACE FREQUENCY</div>
+        <div class="die-freq-grid">`;
+      for (let i=1; i<=6; i++) {
+        const pct = rolls.length ? ((freq.right[i]/rolls.length)*100).toFixed(0) : 0;
+        html += `<div class="die-freq-cell">
+          <div class="die-freq-face">${i}</div>
+          <div class="die-freq-count">${freq.right[i]}</div>
+          <div class="die-freq-count">${pct}%</div>
+        </div>`;
+      }
+      html += `</div>`;
+
+      // Fatigue curve
+      if (fatigue.length > 1) {
+        html += `<div class="section-title">📉 FATIGUE CURVE</div>`;
+        fatigue.forEach(w => {
+          const wSrrClass = w.srr > 6 ? 'good' : w.srr > 5 ? 'warn' : 'bad';
+          html += `<div class="stat-row">
+            <span class="stat-row-label">Rolls ${w.start}–${w.end}</span>
+            <span class="stat-row-value ${wSrrClass}" style="font-size:0.9rem">SRR 1:${w.srr} / ${w.axis}% axis</span>
+          </div>`;
+        });
+      }
+
+      // Alert tracking
+      const alerts = state.alerts || [];
+      if (alerts.length) {
+        html += `<div class="section-title">🔔 ALERT LOG</div>`;
+        const resolved = alerts.filter(a => a.outcome !== null);
+        const accurate = resolved.filter(a => a.sevenOutSoon).length;
+        const accuracy = resolved.length ? ((accurate / resolved.length) * 100).toFixed(0) : '—';
+        html += `<div class="stat-row">
+          <span class="stat-row-label">Alerts Fired</span>
+          <span class="stat-row-value">${alerts.length}</span>
+        </div>`;
+        html += `<div class="stat-row">
+          <span class="stat-row-label">Predicted 7-Out (3 rolls)</span>
+          <span class="stat-row-value ${accuracy > 50 ? 'good' : 'warn'}">${accuracy}%</span>
+        </div>`;
+        alerts.slice(-8).reverse().forEach(a => {
+          const outcomeLabel = a.outcome === null ? 'pending'
+            : a.sevenOutSoon ? '✓ 7-out soon'
+            : a.outcome === 'seven_out' ? '7-out later'
+            : '✓ hand continued';
+          const outcomeClass = a.sevenOutSoon ? 'good' : a.outcome === 'seven_out' ? 'warn' : '';
+          html += `<div class="stat-row" style="font-size:0.85rem">
+            <span class="stat-row-label">Roll ${a.rollNum}<br>
+              <span style="font-size:0.65rem;color:var(--grey)">${a.message}</span>
+            </span>
+            <span class="stat-row-value ${outcomeClass}" style="font-size:0.8rem">${outcomeLabel}</span>
+          </div>`;
+        });
+      }
+
+      return html;
+    }
+
+    function renderLifetimeStats() {
+      const sessions = DB.getAllSessions();
+      if (!sessions.length) return '<div style="color:var(--grey);text-align:center;padding:40px 0;">No sessions recorded yet</div>';
+
+      const allRolls = sessions.flatMap(s => s.rolls || []);
+      const allHands = sessions.flatMap(s => s.hands || []);
+
+      const srr    = Engine.srr(allRolls);
+      const bsr    = Engine.bsr(allRolls);
+      const axis   = Engine.axisPct(allRolls);
+      const hStats = Engine.handStats(allHands);
+      const sigs   = Engine.signatureNumbers(allRolls);
+      const rot    = Engine.rotationStats(allRolls);
+      const transpose = Engine.transposeAnalysis(allRolls);
+
+      const srrClass  = srr  > 6 ? 'good' : srr  > 5 ? 'warn' : 'bad';
+      const axisClass = axis > 25 ? 'good' : axis > 16 ? 'warn' : 'bad';
+      const bsrClass  = bsr  > 3 ? 'good' : bsr  > 2 ? 'warn' : 'bad';
+
+      const cruisePnl = sessions.reduce((sum, s) => sum + (s.pnl || 0), 0);
+      const profitSessions = sessions.filter(s => (s.pnl || 0) > 0).length;
+      const lossSessions   = sessions.filter(s => (s.pnl || 0) < 0).length;
+      const winRate = sessions.length ? ((profitSessions / sessions.length) * 100).toFixed(0) : 0;
+      const cruisePnlClass = cruisePnl > 0 ? 'good' : cruisePnl < 0 ? 'bad' : '';
+
+      let html = `
+        <div class="section-title">🚢 CRUISE LIFETIME</div>
+        <div class="stat-row"><span class="stat-row-label">Total Sessions</span><span class="stat-row-value">${sessions.length}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Total Rolls</span><span class="stat-row-value">${allRolls.length}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Lifetime SRR</span><span class="stat-row-value ${srrClass}">1:${srr||'—'}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Lifetime BSR</span><span class="stat-row-value ${bsrClass}">${bsr||'—'}:1</span></div>
+        <div class="stat-row"><span class="stat-row-label">Lifetime Axis</span><span class="stat-row-value ${axisClass}">${axis}%</span></div>
+        <div class="stat-row"><span class="stat-row-label">Avg Hand</span><span class="stat-row-value">${hStats.avg} rolls</span></div>
+        <div class="stat-row"><span class="stat-row-label">Longest Hand Ever</span><span class="stat-row-value good">${hStats.longest} rolls</span></div>
+        <div class="section-title">💰 CRUISE BANKROLL</div>
+        <div class="stat-row"><span class="stat-row-label">Total P&L</span><span class="stat-row-value ${cruisePnlClass}">${cruisePnl >= 0 ? '+' : ''}$${cruisePnl}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Win Rate</span><span class="stat-row-value ${winRate > 50 ? 'good' : 'warn'}">${winRate}%</span></div>
+        <div class="stat-row"><span class="stat-row-label">Winning Sessions</span><span class="stat-row-value good">${profitSessions}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Losing Sessions</span><span class="stat-row-value bad">${lossSessions}</span></div>
+      `;
+
+      // Transpose analysis — which set works best for Tom
+      if (transpose && Object.keys(transpose).length > 1) {
+        html += `<div class="section-title">🏆 TRANSPOSE ANALYSIS — Your Best Sets</div>`;
+        const sorted = Object.entries(transpose).sort((a,b) => parseFloat(b[1].srr) - parseFloat(a[1].srr));
+        sorted.forEach(([name, s], i) => {
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+          html += `<div class="stat-row">
+            <span class="stat-row-label">${medal} ${name}<br><span style="font-size:0.65rem">${s.rolls} rolls</span></span>
+            <span class="stat-row-value" style="text-align:right;font-size:0.9rem">
+              SRR 1:${s.srr}<br>BSR ${s.bsr}:1 / ${s.axis}% axis
+            </span>
+          </div>`;
+        });
+      }
+
+      // Rotation trends across cruise
+      if (rot) {
+        html += `<div class="section-title">🔄 ROTATION TRENDS</div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Both On Axis</span><span class="stat-row-value ${rot.bothOnAxisPct > 25 ? 'good' : 'warn'}">${rot.bothOnAxisPct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Left On Axis</span><span class="stat-row-value">${rot.left.onAxisPct}%</span></div>`;
+        html += `<div class="stat-row"><span class="stat-row-label">Right On Axis</span><span class="stat-row-value">${rot.right.onAxisPct}%</span></div>`;
+
+        // Which die is weaker
+        const leftOnAxis  = parseFloat(rot.left.onAxisPct);
+        const rightOnAxis = parseFloat(rot.right.onAxisPct);
+        const diff = Math.abs(leftOnAxis - rightOnAxis);
+        if (diff > 5) {
+          const weaker = leftOnAxis < rightOnAxis ? 'LEFT' : 'RIGHT';
+          html += `<div class="alert-bar warning" style="margin:8px 0;">${weaker} DIE IS WEAKER — ${diff.toFixed(1)}% GAP</div>`;
+        }
+      }
+
+      // Lifetime signature numbers
+      if (sigs.length) {
+        html += `<div class="section-title">🔥 LIFETIME SIGNATURE NUMBERS</div>`;
+        sigs.slice(0,6).forEach(s => {
+          const cls = s.deviation > 15 ? 'sig-hot' : s.deviation < -15 ? 'sig-cold' : '';
+          html += `<div class="sig-row">
+            <span>Total ${s.number}</span>
+            <span class="${cls}">${s.deviation > 0 ? '+' : ''}${s.deviation}%</span>
+            <span style="color:var(--grey)">${s.actual} hits</span>
+          </div>`;
+        });
+      }
+
+      // Session history
+      html += `<div class="section-title">📅 SESSION HISTORY</div>`;
+      sessions.slice().reverse().forEach(s => {
+        const sRolls = s.rolls || [];
+        const sSrr   = Engine.srr(sRolls);
+        const sAxis  = Engine.axisPct(sRolls);
+        const sBsr   = Engine.bsr(sRolls);
+        const sPnl   = s.pnl || 0;
+        const sPnlClass = sPnl > 0 ? 'good' : sPnl < 0 ? 'bad' : '';
+        html += `<div class="stat-row">
+          <span class="stat-row-label">${s.date}<br>
+            <span style="font-size:0.65rem">${s.diceSet} · ${sRolls.length} rolls</span>
+          </span>
+          <span class="stat-row-value" style="text-align:right;font-size:0.85rem">
+            SRR 1:${sSrr||'—'}<br>
+            <span class="${sPnlClass}">${sPnl >= 0 ? '+' : ''}$${sPnl}</span>
+          </span>
+        </div>`;
+      });
+
+      return html;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // EXPORT — AirDrop or email the session data
+    // ═══════════════════════════════════════════════════════
+    function exportData() {
+      const sessions = DB.getAllSessions();
+      const data = JSON.stringify(sessions, null, 2);
+      const blob = new Blob([data], { type:'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `diceiq_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+  </script>
+</body>
+</html>

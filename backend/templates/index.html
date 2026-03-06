@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>DiceIQ</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SETUP SCREEN — shown before session starts -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="setup-screen" class="screen active">
+    <div class="logo">🎲 DiceIQ</div>
+    <div class="tagline">Tom's Performance Engine</div>
+
+    <div class="setup-form">
+      <label>Dice Set</label>
+      <select id="dice-set">
+        <option value="Hardway">Hardway Set</option>
+        <option value="All7s">All 7s Set</option>
+        <option value="3V">3-V Set</option>
+        <option value="2V">2-V Set</option>
+      </select>
+
+      <label>Location</label>
+      <input type="text" id="location" value="Ship Casino" />
+
+      <button id="start-btn" class="btn-primary">START SESSION</button>
+    </div>
+
+    <div id="connection-status" class="status-badge checking">
+      Checking connection...
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PLAY SCREEN — active during session        -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="play-screen" class="screen">
+
+    <!-- Top bar — glanceable stats -->
+    <div class="top-bar">
+      <div class="stat">
+        <span class="stat-label">SRR</span>
+        <span class="stat-value" id="srr-display">—</span>
+      </div>
+      <div class="stat center">
+        <span class="stat-label">ROLLS</span>
+        <span class="stat-value" id="roll-count">0</span>
+      </div>
+      <div class="stat right">
+        <span class="stat-label">HAND</span>
+        <span class="stat-value" id="hand-count">1</span>
+      </div>
+    </div>
+
+    <!-- Phase indicator — big and clear -->
+    <div id="phase-display" class="phase-display come-out">
+      COME OUT
+    </div>
+
+    <!-- Last roll display -->
+    <div class="last-roll-container">
+      <div class="dice-display">
+        <div class="die" id="left-die">—</div>
+        <div class="die-plus">+</div>
+        <div class="die" id="right-die">—</div>
+        <div class="die-equals">=</div>
+        <div class="die total" id="total-display">—</div>
+      </div>
+      <div id="result-label" class="result-label">—</div>
+    </div>
+
+    <!-- Mic button — tap to start/stop listening -->
+    <div class="mic-container">
+      <button id="mic-btn" class="mic-btn" onclick="toggleListening()">
+        <span class="mic-icon">🎤</span>
+        <span class="mic-label" id="mic-label">TAP TO LISTEN</span>
+      </button>
+      <div id="heard-text" class="heard-text"></div>
+    </div>
+
+    <!-- Alert banner — diagnostic messages -->
+    <div id="alert-banner" class="alert-banner hidden"></div>
+
+    <!-- Bottom bar -->
+    <div class="bottom-bar">
+      <button class="btn-secondary" onclick="endSession()">END SESSION</button>
+      <div class="session-info">
+        <span id="session-dice-set">—</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- RESULTS SCREEN — post session analytics   -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div id="results-screen" class="screen">
+    <div class="results-header">SESSION COMPLETE</div>
+    <div id="results-content" class="results-content"></div>
+    <button class="btn-primary" onclick="newSession()">NEW SESSION</button>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

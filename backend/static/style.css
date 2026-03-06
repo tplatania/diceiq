@@ -1,0 +1,372 @@
+/* DiceIQ — Dark Casino Theme
+   Black background. Bold numbers. Built for a drink holder.
+   Every element readable at arm's length in casino lighting.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
+/* ─── RESET & BASE ─── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --black:     #000000;
+  --deep:      #0a0a0a;
+  --surface:   #141414;
+  --border:    #2a2a2a;
+  --gold:      #f0c040;
+  --gold-dim:  #a07820;
+  --green:     #00e676;
+  --red:       #ff1744;
+  --white:     #ffffff;
+  --grey:      #666666;
+  --font-main: 'Oswald', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+html, body {
+  background:  var(--black);
+  color:       var(--white);
+  font-family: var(--font-main);
+  height:      100%;
+  overflow:    hidden;
+  user-select: none;
+}
+
+/* ─── SCREENS ─── */
+.screen {
+  display:        none;
+  flex-direction: column;
+  height:         100vh;
+  padding:        20px 16px;
+}
+.screen.active {
+  display: flex;
+}
+
+/* ─── SETUP SCREEN ─── */
+.logo {
+  font-size:   3rem;
+  font-weight: 700;
+  color:        var(--gold);
+  text-align:  center;
+  margin-top:  40px;
+  letter-spacing: 4px;
+}
+.tagline {
+  text-align:  center;
+  color:       var(--grey);
+  font-size:   0.9rem;
+  letter-spacing: 2px;
+  margin-bottom: 40px;
+}
+.setup-form {
+  display:        flex;
+  flex-direction: column;
+  gap:            16px;
+  flex:           1;
+}
+.setup-form label {
+  color:          var(--gold-dim);
+  font-size:      0.75rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: -8px;
+}
+.setup-form select,
+.setup-form input {
+  background:    var(--surface);
+  border:        2px solid var(--border);
+  color:         var(--white);
+  font-family:   var(--font-main);
+  font-size:     1.2rem;
+  padding:       14px 16px;
+  border-radius: 8px;
+  width:         100%;
+  appearance:    none;
+}
+.setup-form select:focus,
+.setup-form input:focus {
+  border-color: var(--gold);
+  outline:      none;
+}
+
+/* ─── BUTTONS ─── */
+.btn-primary {
+  background:     var(--gold);
+  color:          var(--black);
+  border:         none;
+  font-family:    var(--font-main);
+  font-size:      1.3rem;
+  font-weight:    700;
+  letter-spacing: 3px;
+  padding:        18px;
+  border-radius:  8px;
+  width:          100%;
+  cursor:         pointer;
+  margin-top:     8px;
+}
+.btn-primary:active {
+  background: var(--gold-dim);
+}
+.btn-secondary {
+  background:     transparent;
+  color:          var(--grey);
+  border:         1px solid var(--border);
+  font-family:    var(--font-main);
+  font-size:      0.85rem;
+  letter-spacing: 2px;
+  padding:        10px 20px;
+  border-radius:  6px;
+  cursor:         pointer;
+}
+
+/* ─── STATUS BADGE ─── */
+.status-badge {
+  text-align:     center;
+  font-size:      0.75rem;
+  letter-spacing: 1px;
+  padding:        8px;
+  border-radius:  4px;
+  margin-top:     16px;
+}
+.status-badge.checking  { color: var(--grey);  }
+.status-badge.connected { color: var(--green); }
+.status-badge.error     { color: var(--red);   }
+
+/* ─── TOP BAR ─── */
+.top-bar {
+  display:         flex;
+  justify-content: space-between;
+  background:      var(--surface);
+  border:          1px solid var(--border);
+  border-radius:   10px;
+  padding:         12px 20px;
+  margin-bottom:   12px;
+}
+.stat { display: flex; flex-direction: column; align-items: flex-start; }
+.stat.center { align-items: center; }
+.stat.right  { align-items: flex-end; }
+.stat-label {
+  color:          var(--grey);
+  font-size:      0.65rem;
+  letter-spacing: 2px;
+}
+.stat-value {
+  color:       var(--gold);
+  font-size:   1.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* ─── PHASE DISPLAY ─── */
+.phase-display {
+  text-align:     center;
+  font-size:      1.6rem;
+  font-weight:    700;
+  letter-spacing: 4px;
+  padding:        14px;
+  border-radius:  8px;
+  margin-bottom:  12px;
+  transition:     all 0.3s ease;
+}
+.phase-display.come-out {
+  background: rgba(0, 230, 118, 0.1);
+  color:      var(--green);
+  border:     1px solid rgba(0, 230, 118, 0.3);
+}
+.phase-display.point {
+  background: rgba(240, 192, 64, 0.1);
+  color:      var(--gold);
+  border:     1px solid rgba(240, 192, 64, 0.3);
+}
+
+/* ─── DICE DISPLAY ─── */
+.last-roll-container {
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-radius: 10px;
+  padding:       20px 16px 14px;
+  margin-bottom: 12px;
+  text-align:    center;
+}
+.dice-display {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  margin-bottom:   8px;
+}
+.die {
+  background:    var(--border);
+  border-radius: 8px;
+  width:         64px;
+  height:        64px;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  font-size:     2.2rem;
+  font-weight:   700;
+  font-family:   var(--font-mono);
+  color:         var(--white);
+}
+.die.total {
+  background: var(--gold);
+  color:      var(--black);
+  width:      72px;
+  height:     72px;
+  font-size:  2.5rem;
+}
+.die-plus, .die-equals {
+  color:     var(--grey);
+  font-size: 1.4rem;
+}
+.result-label {
+  color:          var(--gold-dim);
+  font-size:      0.85rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ─── MIC BUTTON ─── */
+.mic-container {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            10px;
+  flex:           1;
+  justify-content: center;
+}
+.mic-btn {
+  background:    var(--surface);
+  border:        3px solid var(--border);
+  border-radius: 50%;
+  width:         120px;
+  height:        120px;
+  display:       flex;
+  flex-direction: column;
+  align-items:   center;
+  justify-content: center;
+  cursor:        pointer;
+  transition:    all 0.2s ease;
+  gap:           4px;
+}
+.mic-btn.listening {
+  border-color: var(--green);
+  background:   rgba(0, 230, 118, 0.1);
+  animation:    pulse 1.5s infinite;
+}
+.mic-btn.error {
+  border-color: var(--red);
+  background:   rgba(255, 23, 68, 0.1);
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+  50%       { box-shadow: 0 0 0 20px rgba(0, 230, 118, 0); }
+}
+.mic-icon  { font-size: 2.5rem; }
+.mic-label {
+  color:          var(--grey);
+  font-size:      0.6rem;
+  letter-spacing: 2px;
+}
+.heard-text {
+  color:          var(--grey);
+  font-family:    var(--font-mono);
+  font-size:      0.85rem;
+  letter-spacing: 1px;
+  min-height:     20px;
+  text-align:     center;
+}
+
+/* ─── ALERT BANNER ─── */
+.alert-banner {
+  background:    rgba(240, 192, 64, 0.15);
+  border:        1px solid var(--gold-dim);
+  border-radius: 8px;
+  color:         var(--gold);
+  font-size:     0.85rem;
+  letter-spacing: 1px;
+  padding:       10px 14px;
+  text-align:    center;
+  transition:    all 0.3s ease;
+}
+.alert-banner.hidden  { display: none; }
+.alert-banner.alert   { border-color: var(--red);   color: var(--red);   background: rgba(255,23,68,0.1); }
+.alert-banner.warning { border-color: var(--gold);  color: var(--gold);  }
+.alert-banner.info    { border-color: var(--green); color: var(--green); background: rgba(0,230,118,0.1); }
+
+/* ─── BOTTOM BAR ─── */
+.bottom-bar {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  padding-top:     8px;
+}
+.session-info {
+  color:          var(--grey);
+  font-size:      0.75rem;
+  letter-spacing: 1px;
+}
+
+/* ─── RESULTS SCREEN ─── */
+.results-header {
+  text-align:     center;
+  font-size:      1.4rem;
+  font-weight:    700;
+  color:          var(--gold);
+  letter-spacing: 4px;
+  padding:        20px 0;
+  border-bottom:  1px solid var(--border);
+  margin-bottom:  20px;
+}
+.results-content {
+  flex: 1;
+  overflow-y: auto;
+}
+.result-stat {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  padding:         14px 0;
+  border-bottom:   1px solid var(--border);
+}
+.result-stat-label {
+  color:          var(--grey);
+  font-size:      0.85rem;
+  letter-spacing: 2px;
+}
+.result-stat-value {
+  color:       var(--white);
+  font-size:   1.4rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.result-stat-value.good { color: var(--green); }
+.result-stat-value.warn { color: var(--gold);  }
+.result-stat-value.bad  { color: var(--red);   }
+
+.signature-numbers {
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-radius: 8px;
+  padding:       14px;
+  margin:        14px 0;
+}
+.sig-title {
+  color:          var(--gold-dim);
+  font-size:      0.7rem;
+  letter-spacing: 2px;
+  margin-bottom:  10px;
+}
+.sig-number {
+  display:         flex;
+  justify-content: space-between;
+  padding:         6px 0;
+  color:           var(--white);
+  font-family:     var(--font-mono);
+}

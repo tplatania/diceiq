@@ -1,0 +1,15 @@
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.md
+*.db
+.env
+.env.example
+iphone/
+docs/
+frontend/
+__pycache__/
+*.pyc
+.idea/
+.vscode/

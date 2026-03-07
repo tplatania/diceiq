@@ -5,70 +5,62 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import ThemeToggle from "../../../components/ThemeToggle";
 
+// Dot positions for each die face value (1-6) on a 3x3 grid
+const DOT_POSITIONS: Record<number, [number, number][]> = {
+  1: [[1, 1]],
+  2: [[0, 2], [2, 0]],
+  3: [[0, 2], [1, 1], [2, 0]],
+  4: [[0, 0], [0, 2], [2, 0], [2, 2]],
+  5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
+  6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]],
+};
+
+function DiceFace({ value, size = 22, isTop = true }: { value: number; size?: number; isTop?: boolean }) {
+  const dots = DOT_POSITIONS[value] || [];
+  const padding = size * 0.15;
+  const dotSize = size * 0.23;
+  const cellSize = (size - padding * 2) / 3;
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: size * 0.15,
+      background: isTop ? "rgba(30,111,217,0.15)" : "rgba(30,111,217,0.06)",
+      border: `1px solid ${isTop ? "rgba(30,111,217,0.4)" : "rgba(30,111,217,0.15)"}`,
+      position: "relative" as const, flexShrink: 0,
+    }}>
+      {dots.map(([row, col], i) => (
+        <div key={i} style={{
+          position: "absolute" as const, width: dotSize, height: dotSize, borderRadius: "50%",
+          background: isTop ? "#4DA3FF" : "rgba(77,163,255,0.4)",
+          boxShadow: isTop ? "0 0 3px rgba(77,163,255,0.5)" : "none",
+          left: padding + col * cellSize + (cellSize - dotSize) / 2,
+          top: padding + row * cellSize + (cellSize - dotSize) / 2,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function DiceSetPreview({ leftTop, leftFront, rightTop, rightFront }: {
+  leftTop: number; leftFront: number; rightTop: number; rightFront: number;
+}) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, flexShrink: 0 }}>
+      <DiceFace value={leftTop} size={22} isTop={true} />
+      <DiceFace value={rightTop} size={22} isTop={true} />
+      <DiceFace value={leftFront} size={18} isTop={false} />
+      <DiceFace value={rightFront} size={18} isTop={false} />
+    </div>
+  );
+}
+
 const DICE_SETS = [
-  {
-    id: "all-sevens",
-    name: "All Sevens",
-    target: "Hit 7 on come out",
-    phase: "Come Out",
-    phaseColor: "#2ECC71",
-    sevenWays: 4,
-    sevenPct: "25%",
-  },
-  {
-    id: "hard-way",
-    name: "Hard Way",
-    target: "Avoid 7, survive point",
-    phase: "Point",
-    phaseColor: "#1E6FD9",
-    sevenWays: 4,
-    sevenPct: "25%",
-  },
-  {
-    id: "3v-hard-six",
-    name: "3V Hard Six",
-    target: "Hit 6 and 8",
-    phase: "Point",
-    phaseColor: "#1E6FD9",
-    sevenWays: 2,
-    sevenPct: "12%",
-  },
-  {
-    id: "parallel-sixes",
-    name: "Parallel Sixes",
-    target: "Hit 4, 5, 9, 10",
-    phase: "Point",
-    phaseColor: "#1E6FD9",
-    sevenWays: 4,
-    sevenPct: "25%",
-  },
-  {
-    id: "crossed-sixes",
-    name: "Crossed Sixes",
-    target: "Hit all box numbers",
-    phase: "Point",
-    phaseColor: "#1E6FD9",
-    sevenWays: 2,
-    sevenPct: "12%",
-  },
-  {
-    id: "mini-v",
-    name: "Mini-V Hard 4",
-    target: "Hit 5 and 9",
-    phase: "Point",
-    phaseColor: "#1E6FD9",
-    sevenWays: 4,
-    sevenPct: "25%",
-  },
-  {
-    id: "2v-set",
-    name: "2V Set",
-    target: "Hit 4 and 10",
-    phase: "Point",
-    phaseColor: "#1E6FD9",
-    sevenWays: 2,
-    sevenPct: "12%",
-  },
+  { id: "all-sevens", name: "All Sevens", target: "Hit 7 on come out", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%", leftTop: 4, leftFront: 5, rightTop: 3, rightFront: 2 },
+  { id: "hard-way", name: "Hard Way", target: "Avoid 7, survive point", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 4, sevenPct: "25%", leftTop: 4, leftFront: 5, rightTop: 4, rightFront: 5 },
+  { id: "3v-set", name: "3V Set", target: "Hit 6 and 8", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%", leftTop: 3, leftFront: 2, rightTop: 3, rightFront: 6 },
+  { id: "straight-sixes", name: "Straight Sixes", target: "Come out rolls", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%", leftTop: 6, leftFront: 2, rightTop: 6, rightFront: 2 },
+  { id: "crossed-sixes", name: "Crossed Sixes", target: "Outside numbers", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%", leftTop: 6, leftFront: 5, rightTop: 6, rightFront: 4 },
+  { id: "6-5-5-6", name: "6/5-5/6 Set", target: "Come out ONLY", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%", leftTop: 6, leftFront: 5, rightTop: 5, rightFront: 6 },
+  { id: "2v-set", name: "2V Set", target: "Hit 4 and 10", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%", leftTop: 2, leftFront: 3, rightTop: 2, rightFront: 1 },
 ];
 
 function DiceSetContent() {
@@ -119,15 +111,18 @@ function DiceSetContent() {
               {set.phase}
             </span>
 
-            {/* Set name */}
-            <h3 style={styles.setName}>{set.name}</h3>
+            {/* Name + dice row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", gap: 4 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={styles.setName}>{set.name}</h3>
+                <p style={styles.setTarget}>{set.target}</p>
+              </div>
+              <DiceSetPreview leftTop={set.leftTop} leftFront={set.leftFront} rightTop={set.rightTop} rightFront={set.rightFront} />
+            </div>
 
-            {/* Target */}
-            <p style={styles.setTarget}>{set.target}</p>
-
-            {/* Seven ways */}
+            {/* Seven stats */}
             <div style={styles.setMeta}>
-              <span style={styles.metaLabel}>7 Ways</span>
+              <span style={styles.metaLabel}>7s</span>
               <span style={{
                 ...styles.metaValue,
                 color: set.sevenWays <= 2 ? "#2ECC71" : "#F39C12",
@@ -158,7 +153,7 @@ function DiceSetContent() {
           <h3 style={styles.setName}>Custom Sets</h3>
           <p style={styles.setTarget}>Create & manage your own sets</p>
           <div style={styles.setMeta}>
-            <span style={styles.metaLabel}>7 Ways</span>
+            <span style={styles.metaLabel}>7s</span>
             <span style={{ ...styles.metaValue, color: "var(--silver-mid)" }}>
               Calculated on save
             </span>

@@ -24,9 +24,9 @@ BUILT_IN_DICE_SETS = [
             "Switch to another set once a point is established."
         ),
         "left_top": 4,
-        "left_front": 2,
+        "left_front": 5,
         "right_top": 3,
-        "right_front": 5,
+        "right_front": 2,
         "target_numbers": [7],
         "target_label": "Hit 7 on come out",
         "seven_count": 4,
@@ -50,9 +50,9 @@ BUILT_IN_DICE_SETS = [
             "no specific number targeted, just seven avoidance. "
             "Note: does not hit 5 or 9 on axis."
         ),
-        "left_top": 6,
+        "left_top": 4,
         "left_front": 5,
-        "right_top": 6,
+        "right_top": 4,
         "right_front": 5,
         "target_numbers": [7],
         "target_label": "Avoid 7, survive point phase",
@@ -61,8 +61,8 @@ BUILT_IN_DICE_SETS = [
         "target_pct": 25,
         "seven_pct": 25,
         "on_axis_outcomes": {
-            "2": 1, "3": 2, "4": 1, "6": 2, "7": 4,
-            "8": 2, "10": 1, "11": 2, "12": 1
+            "4": 1, "5": 2, "6": 3, "7": 4,
+            "8": 3, "9": 2, "10": 1
         },
         "skill_level_required": "beginner",
         "phase": "point",
@@ -95,7 +95,7 @@ BUILT_IN_DICE_SETS = [
         "phase": "point",
     },
     {
-        "name": "Parallel Sixes",
+        "name": "Straight Sixes",
         "set_type": "builtin",
         "description": (
             "Both 6s on top running parallel. "
@@ -105,9 +105,9 @@ BUILT_IN_DICE_SETS = [
             "Great for shooters who prefer place bets on 4 and 10."
         ),
         "left_top": 6,
-        "left_front": 3,
+        "left_front": 2,
         "right_top": 6,
-        "right_front": 3,
+        "right_front": 2,
         "target_numbers": [4, 5, 9, 10],
         "target_label": "Hit outside numbers 4, 5, 9, 10",
         "seven_count": 4,
@@ -115,8 +115,8 @@ BUILT_IN_DICE_SETS = [
         "target_pct": 50,
         "seven_pct": 25,
         "on_axis_outcomes": {
-            "2": 1, "4": 2, "5": 2, "6": 1, "7": 4,
-            "8": 1, "9": 2, "10": 2, "12": 1
+            "2": 1, "3": 2, "4": 1, "6": 2, "7": 4,
+            "8": 2, "10": 1, "11": 2, "12": 1
         },
         "skill_level_required": "intermediate",
         "phase": "point",
@@ -133,9 +133,9 @@ BUILT_IN_DICE_SETS = [
             "Ideal for shooters with place bets across the board."
         ),
         "left_top": 6,
-        "left_front": 2,
+        "left_front": 5,
         "right_top": 6,
-        "right_front": 3,
+        "right_front": 4,
         "target_numbers": [4, 5, 6, 8, 9, 10],
         "target_label": "Hit all box numbers",
         "seven_count": 2,
@@ -150,31 +150,31 @@ BUILT_IN_DICE_SETS = [
         "phase": "point",
     },
     {
-        "name": "Mini-V Hard 4",
+        "name": "6/5-5/6 Set",
         "set_type": "builtin",
         "description": (
-            "A V formation using 3 and 2. "
-            "Targets 5 and 9 specifically. "
-            "Hits 5 and 9 with 2 ways each for 4 total target hits. "
-            "Also produces strong 6 and 8 coverage as a bonus. "
-            "Good for shooters focused on 5 and 9 place bets."
+            "Good for come out roll ONLY. "
+            "NOT good for place numbers. "
+            "4 sevens on axis out of 16 combinations. "
+            "Use this exclusively on the come out roll "
+            "and switch to another set once a point is established."
         ),
-        "left_top": 3,
-        "left_front": 2,
-        "right_top": 2,
-        "right_front": 3,
-        "target_numbers": [5, 9],
-        "target_label": "Hit 5 and 9",
+        "left_top": 6,
+        "left_front": 5,
+        "right_top": 5,
+        "right_front": 6,
+        "target_numbers": [7],
+        "target_label": "Come out ONLY",
         "seven_count": 4,
         "target_hits": 4,
         "target_pct": 25,
         "seven_pct": 25,
         "on_axis_outcomes": {
-            "4": 1, "5": 2, "6": 3, "7": 4,
-            "8": 3, "9": 2, "10": 1
+            "2": 1, "3": 2, "4": 1, "6": 1, "7": 4,
+            "8": 2, "10": 1, "11": 2, "12": 1
         },
         "skill_level_required": "intermediate",
-        "phase": "point",
+        "phase": "come_out",
     },
     {
         "name": "2V Set",

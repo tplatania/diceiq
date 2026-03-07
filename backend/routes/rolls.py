@@ -228,7 +228,7 @@ def _process_roll(session, data, roll_number):
         session.total_box_numbers += 1
 
     # Update per-number distribution (powers bet strategy engine)
-    dist = session.number_distribution or {str(n): 0 for n in range(2, 13)}
+    dist = dict(session.number_distribution or {str(n): 0 for n in range(2, 13)})
     dist[str(total)] = dist.get(str(total), 0) + 1
     session.number_distribution = dist
 

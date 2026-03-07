@@ -12,3 +12,6 @@ dist/
 build/
 venv/
 test_*.py
+CC_CODE_REVIEW_PROMPT.md
+CC_FIX_3_CRITICALS.md
+.claude/

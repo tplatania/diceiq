@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+/* ================================================
+   DiceIQ — Global Design System
+   Crystal Blue / Casino Dark / Silver Precision
+   ================================================ */
+
+:root {
+  /* --- Brand Colors --- */
+  --blue-deep:       #080C14;
+  --blue-navy:       #0D1B2E;
+  --blue-crystal:    #0A3A6B;
+  --blue-electric:   #1E6FD9;
+  --blue-glow:       #3D8EF0;
+
+  /* --- Silver (Primary Accent) --- */
+  --silver-bright:   #E8EDF5;
+  --silver-mid:      #B8C4D0;
+  --silver-steel:    #7A8A99;
+  --silver-dark:     #3A4A58;
+
+  /* --- Casino Felt --- */
+  --felt-dark:       #071A0F;
+  --felt-mid:        #0D2B18;
+  --felt-accent:     #1A4A28;
+
+  /* --- Game State Colors --- */
+  --crimson:         #8B1A1A;
+  --crimson-bright:  #C0392B;
+  --success:         #2ECC71;
+  --success-dark:    #27AE60;
+  --warning:         #F39C12;
+
+  /* --- Typography --- */
+  --font-display:    'Rajdhani', sans-serif;
+  --font-body:       'Inter', sans-serif;
+  --font-mono:       'JetBrains Mono', monospace;
+}
+
+/* ================================================
+   DARK MODE (default — at the table)
+   ================================================ */
+:root,
+[data-theme="dark"] {
+  --bg-primary:      var(--blue-deep);
+  --bg-surface:      var(--blue-navy);
+  --bg-raised:       #111E33;
+  --bg-overlay:      rgba(13, 27, 46, 0.95);
+
+  --text-primary:    var(--silver-bright);
+  --text-secondary:  var(--silver-mid);
+  --text-muted:      var(--silver-steel);
+
+  --accent:          var(--silver-mid);
+  --accent-bright:   var(--silver-bright);
+  --accent-electric: var(--blue-electric);
+
+  --border:          #1A2E4A;
+  --border-bright:   #2A4A6A;
+
+  --glow-blue:       0 0 20px rgba(30, 111, 217, 0.4);
+  --glow-silver:     0 0 15px rgba(184, 196, 208, 0.3);
+}
+
+/* ================================================
+   LIGHT MODE (analytics, daytime review)
+   ================================================ */
+[data-theme="light"] {
+  --bg-primary:      #F0F4FF;
+  --bg-surface:      #FFFFFF;
+  --bg-raised:       #E8EDF8;
+  --bg-overlay:      rgba(240, 244, 255, 0.95);
+
+  --text-primary:    #0D1B2E;
+  --text-secondary:  #2A4A6A;
+  --text-muted:      #5A7A9A;
+
+  --accent:          #4A6A8A;
+  --accent-bright:   #0D1B2E;
+  --accent-electric: #1558B0;
+
+  --border:          #C8D4E8;
+  --border-bright:   #A0B4CC;
+
+  --glow-blue:       0 2px 8px rgba(21, 88, 176, 0.15);
+  --glow-silver:     0 2px 8px rgba(74, 106, 138, 0.15);
+}
+
+/* ================================================
+   BASE STYLES
+   ================================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ================================================
+   TYPOGRAPHY
+   ================================================ */
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); }
+h2 { font-size: clamp(1.4rem, 4vw, 1.8rem); }
+h3 { font-size: clamp(1.1rem, 3vw, 1.3rem); }
+
+.text-silver {
+  color: var(--silver-mid);
+}
+
+.text-electric {
+  color: var(--blue-electric);
+}
+
+.text-crimson {
+  color: var(--crimson-bright);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+/* ================================================
+   SURFACES & CARDS
+   ================================================ */
+
+.surface {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.surface-raised {
+  background-color: var(--bg-raised);
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+}
+
+/* ================================================
+   BUTTONS
+   ================================================ */
+
+.btn-primary {
+  background: var(--blue-electric);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 28px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--glow-blue);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 28px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:active {
+  background: var(--bg-raised);
+}

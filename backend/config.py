@@ -81,6 +81,17 @@ cache = Cache(app, config={
 VOICE_TOKEN_SECRET = os.environ.get('VOICE_TOKEN_SECRET', 'diceiq-voice-dev-secret')
 
 # ---------------------------------------------
+# Production Secret Safety Check
+# Refuse to start if production is using default dev secrets
+# ---------------------------------------------
+_is_production = os.environ.get('FLASK_ENV') == 'production' or os.environ.get('ENV') == 'production'
+if _is_production:
+    if app.config['SECRET_KEY'] == 'diceiq-dev-secret-change-in-production':
+        raise RuntimeError("FATAL: SECRET_KEY is still the default dev value. Set SECRET_KEY env var for production.")
+    if VOICE_TOKEN_SECRET == 'diceiq-voice-dev-secret':
+        raise RuntimeError("FATAL: VOICE_TOKEN_SECRET is still the default dev value. Set VOICE_TOKEN_SECRET env var for production.")
+
+# ---------------------------------------------
 # ElevenLabs Setup
 # ---------------------------------------------
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")

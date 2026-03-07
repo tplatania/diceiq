@@ -18,8 +18,8 @@ def require_elevenlabs_secret(f):
         provided_secret = request.headers.get("X-Server-Secret") or request.args.get("server_secret")
 
         if not ELEVENLABS_SERVER_SECRET:
-            app.logger.warning(f"ELEVENLABS_SERVER_SECRET not configured - {f.__name__} unprotected!")
-            return f(*args, **kwargs)
+            app.logger.error(f"ELEVENLABS_SERVER_SECRET not configured - {f.__name__} blocked!")
+            return jsonify({"error": "Service unavailable - server secret not configured"}), 503
 
         if not provided_secret:
             app.logger.warning(f"Unauthorized: no secret for {f.__name__}")

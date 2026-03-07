@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import ThemeToggle from "../../../components/ThemeToggle";
+import { DiceSetPreviewDynamic } from "../../../components/DiceFaceRenderer";
 
 // ── Types ──────────────────────────────────────
 type CustomSet = {
@@ -34,28 +35,41 @@ function calcSevenWays(lt: number, lf: number, rt: number, rf: number): number {
   return count;
 }
 
+// Given a selected face, return which faces are invalid for the paired position
+// Invalid = the face itself + its opposite (sum to 7)
+function getDisabledFaces(selected: number | null): number[] {
+  if (!selected) return [];
+  return [selected, 7 - selected];
+}
+
 // ── Face picker component ──────────────────────
-function FacePicker({ label, value, onChange }: {
+function FacePicker({ label, value, onChange, disabled = [] }: {
   label: string;
   value: number | null;
   onChange: (v: number) => void;
+  disabled?: number[];
 }) {
   return (
     <div style={styles.pickerWrap}>
       <span style={styles.pickerLabel}>{label}</span>
       <div style={styles.pickerRow}>
-        {[1,2,3,4,5,6].map(n => (
+        {[1,2,3,4,5,6].map(n => {
+          const isDisabled = disabled.includes(n);
+          return (
           <button
             key={n}
             style={{
               ...styles.faceBtn,
               ...(value === n ? styles.faceBtnActive : {}),
+              ...(isDisabled ? styles.faceBtnDisabled : {}),
             }}
-            onClick={() => onChange(n)}
+            onClick={() => !isDisabled && onChange(n)}
+            disabled={isDisabled}
           >
             {n}
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -76,6 +90,24 @@ function CustomSetsContent() {
   const [rightTop, setRightTop] = useState<number | null>(null);
   const [rightFront, setRightFront] = useState<number | null>(null);
 
+  // Clear paired face if the new selection makes it invalid
+  const handleLeftTop = (v: number) => {
+    setLeftTop(v);
+    if (leftFront && (leftFront === v || leftFront === 7 - v)) setLeftFront(null);
+  };
+  const handleLeftFront = (v: number) => {
+    setLeftFront(v);
+    if (leftTop && (leftTop === v || leftTop === 7 - v)) setLeftTop(null);
+  };
+  const handleRightTop = (v: number) => {
+    setRightTop(v);
+    if (rightFront && (rightFront === v || rightFront === 7 - v)) setRightFront(null);
+  };
+  const handleRightFront = (v: number) => {
+    setRightFront(v);
+    if (rightTop && (rightTop === v || rightTop === 7 - v)) setRightTop(null);
+  };
+
   // Load saved sets from local storage
   useEffect(() => {
     setMounted(true);
@@ -90,7 +122,12 @@ function CustomSetsContent() {
     setSets(updated);
   };
 
-  const canSave = name.trim() && leftTop && leftFront && rightTop && rightFront;
+  // Top and front can't be opposite faces (sum to 7)
+  const isValidPair = (top: number | null, front: number | null) =>
+    top && front ? top + front !== 7 : true;
+  const leftValid = isValidPair(leftTop, leftFront);
+  const rightValid = isValidPair(rightTop, rightFront);
+  const canSave = name.trim() && leftTop && leftFront && rightTop && rightFront && leftValid && rightValid;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -155,27 +192,42 @@ function CustomSetsContent() {
           <div style={styles.diceRow}>
             <div style={styles.dieSection}>
               <span style={styles.dieSectionLabel}>LEFT DIE</span>
-              <FacePicker label="Top" value={leftTop} onChange={setLeftTop} />
-              <FacePicker label="Front" value={leftFront} onChange={setLeftFront} />
+              <FacePicker label="Top" value={leftTop} onChange={handleLeftTop} disabled={getDisabledFaces(leftFront)} />
+              <FacePicker label="Front" value={leftFront} onChange={handleLeftFront} disabled={getDisabledFaces(leftTop)} />
             </div>
             <div style={styles.dieDivider} />
             <div style={styles.dieSection}>
               <span style={styles.dieSectionLabel}>RIGHT DIE</span>
-              <FacePicker label="Top" value={rightTop} onChange={setRightTop} />
-              <FacePicker label="Front" value={rightFront} onChange={setRightFront} />
+              <FacePicker label="Top" value={rightTop} onChange={handleRightTop} disabled={getDisabledFaces(rightFront)} />
+              <FacePicker label="Front" value={rightFront} onChange={handleRightFront} disabled={getDisabledFaces(rightTop)} />
             </div>
           </div>
           {leftTop && leftFront && rightTop && rightFront && (
-            <div style={styles.preview}>
-              <span style={styles.previewLabel}>7 Ways Preview</span>
-              <span style={{
-                ...styles.previewValue,
-                color: calcSevenWays(leftTop,leftFront,rightTop,rightFront) <= 2
-                  ? "#2ECC71" : "#F39C12"
-              }}>
-                {calcSevenWays(leftTop,leftFront,rightTop,rightFront)} ways ·{" "}
-                {Math.round((calcSevenWays(leftTop,leftFront,rightTop,rightFront)/16)*100)}%
-              </span>
+            <div style={{
+              display: "flex", flexDirection: "column" as const, gap: 8,
+              padding: "10px 12px",
+              background: "var(--bg-raised)",
+              borderRadius: "8px",
+              border: "1px solid var(--border)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={styles.previewLabel}>Dice Preview</span>
+                <DiceSetPreviewDynamic
+                  leftTop={leftTop} leftFront={leftFront}
+                  rightTop={rightTop} rightFront={rightFront}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={styles.previewLabel}>7s</span>
+                <span style={{
+                  ...styles.previewValue,
+                  color: calcSevenWays(leftTop,leftFront,rightTop,rightFront) <= 2
+                    ? "#2ECC71" : "#F39C12"
+                }}>
+                  {calcSevenWays(leftTop,leftFront,rightTop,rightFront)} ways ·{" "}
+                  {Math.round((calcSevenWays(leftTop,leftFront,rightTop,rightFront)/16)*100)}%
+                </span>
+              </div>
             </div>
           )}
           <div style={styles.formBtns}>
@@ -196,16 +248,24 @@ function CustomSetsContent() {
       {!creating && mounted && (
         <div style={styles.grid}>
           {sets.map(set => (
-            <button key={set.id} style={styles.card} onClick={() => handleSelect(set)}>
+            <div key={set.id} style={styles.card} onClick={() => handleSelect(set)}>
               <span style={{ ...styles.phaseBadge, color: "#B8C4D0", borderColor: "#B8C4D0" }}>
                 Custom
               </span>
-              <h3 style={styles.setName}>{set.name}</h3>
-              <p style={styles.setTarget}>
-                L: {set.leftTop}·{set.leftFront} — R: {set.rightTop}·{set.rightFront}
-              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", gap: 4 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={styles.setName}>{set.name}</h3>
+                  <p style={styles.setTarget}>
+                    L: {set.leftTop}t/{set.leftFront}f — R: {set.rightTop}t/{set.rightFront}f
+                  </p>
+                </div>
+                <DiceSetPreviewDynamic
+                  leftTop={set.leftTop} leftFront={set.leftFront}
+                  rightTop={set.rightTop} rightFront={set.rightFront}
+                />
+              </div>
               <div style={styles.setMeta}>
-                <span style={styles.metaLabel}>7 Ways</span>
+                <span style={styles.metaLabel}>7s</span>
                 <span style={{ ...styles.metaValue, color: set.sevenWays <= 2 ? "#2ECC71" : "#F39C12" }}>
                   {set.sevenWays} ways · {set.sevenPct}
                 </span>
@@ -214,7 +274,7 @@ function CustomSetsContent() {
                 onClick={e => { e.stopPropagation(); handleDelete(set.id); }}>
                 ✕
               </button>
-            </button>
+            </div>
           ))}
 
           {/* Create New Card */}
@@ -338,6 +398,10 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid var(--blue-electric)",
     color: "white",
   },
+  faceBtnDisabled: {
+    opacity: 0.2,
+    cursor: "not-allowed",
+  },
   preview: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
     padding: "8px 12px",
@@ -417,4 +481,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptyText: { color: "var(--text-secondary)", fontSize: "0.9rem" },
   emptySubtext: { color: "var(--text-muted)", fontSize: "0.75rem" },
+  errorText: {
+    fontSize: "0.6rem", color: "#E74C3C",
+    fontFamily: "var(--font-mono)", letterSpacing: "0.03em",
+  },
 };

@@ -5,18 +5,57 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import ThemeToggle from "../../../components/ThemeToggle";
 
-// Dot positions for each die face value (1-6) on a 3x3 grid
-const DOT_POSITIONS: Record<number, [number, number][]> = {
-  1: [[1, 1]],
-  2: [[0, 2], [2, 0]],
-  3: [[0, 2], [1, 1], [2, 0]],
-  4: [[0, 0], [0, 2], [2, 0], [2, 2]],
-  5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
-  6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]],
+/*
+  ═══════════════════════════════════════════════════════════════
+  ORIENTATION-AWARE PIP RENDERING
+  Based on DICE_GEOMETRY_BIBLE.md — verified against physical casino dice
+  
+  Key rules:
+  - Face 6: horizontal rows (═) when 2 or 5 is adjacent, vertical columns (‖) when 3 or 4 is adjacent
+  - Face 2: diagonal direction depends on viewing angle
+  - Face 3: diagonal direction depends on viewing angle  
+  - Faces 1, 4, 5: rotationally symmetric — always the same
+  ═══════════════════════════════════════════════════════════════
+*/
+
+// Per-set pip positions — exact (row, col) arrays from the Dice Geometry Bible
+// Every pip position was verified against physical casino die photos (IMG_1825–1830)
+const SET_PIPS: Record<string, {
+  left: { topVal: number; topPips: [number,number][]; frontVal: number; frontPips: [number,number][] };
+  right: { topVal: number; topPips: [number,number][]; frontVal: number; frontPips: [number,number][] };
+}> = {
+  "hard-way": {
+    left:  { topVal:5, topPips:[[0,0],[0,2],[1,1],[2,0],[2,2]], frontVal:4, frontPips:[[0,0],[0,2],[2,0],[2,2]] },
+    right: { topVal:5, topPips:[[0,0],[0,2],[1,1],[2,0],[2,2]], frontVal:4, frontPips:[[0,0],[0,2],[2,0],[2,2]] },
+  },
+  "all-sevens": {
+    left:  { topVal:4, topPips:[[0,0],[0,2],[2,0],[2,2]], frontVal:5, frontPips:[[0,0],[0,2],[1,1],[2,0],[2,2]] },
+    right: { topVal:3, topPips:[[0,0],[1,1],[2,2]], frontVal:2, frontPips:[[0,0],[2,2]] },
+  },
+  "3v-set": {
+    left:  { topVal:3, topPips:[[0,2],[1,1],[2,0]], frontVal:6, frontPips:[[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]] },
+    right: { topVal:3, topPips:[[0,0],[1,1],[2,2]], frontVal:2, frontPips:[[0,0],[2,2]] },
+  },
+  "straight-sixes": {
+    left:  { topVal:6, topPips:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]], frontVal:5, frontPips:[[0,0],[0,2],[1,1],[2,0],[2,2]] },
+    right: { topVal:6, topPips:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]], frontVal:5, frontPips:[[0,0],[0,2],[1,1],[2,0],[2,2]] },
+  },
+  "crossed-sixes": {
+    left:  { topVal:6, topPips:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]], frontVal:5, frontPips:[[0,0],[0,2],[1,1],[2,0],[2,2]] },
+    right: { topVal:6, topPips:[[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]], frontVal:4, frontPips:[[0,0],[0,2],[2,0],[2,2]] },
+  },
+  "6-5-5-6": {
+    left:  { topVal:6, topPips:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]], frontVal:5, frontPips:[[0,0],[0,2],[1,1],[2,0],[2,2]] },
+    right: { topVal:5, topPips:[[0,0],[0,2],[1,1],[2,0],[2,2]], frontVal:6, frontPips:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]] },
+  },
+  "2v-set": {
+    left:  { topVal:2, topPips:[[0,2],[2,0]], frontVal:3, frontPips:[[0,2],[1,1],[2,0]] },
+    right: { topVal:2, topPips:[[0,0],[2,2]], frontVal:1, frontPips:[[1,1]] },
+  },
 };
 
-function DiceFace({ value, size = 22, isTop = true }: { value: number; size?: number; isTop?: boolean }) {
-  const dots = DOT_POSITIONS[value] || [];
+// DiceFace now renders from explicit pip positions (orientation-aware)
+function DiceFace({ pips, size = 22, isTop = true }: { pips: [number,number][]; size?: number; isTop?: boolean }) {
   const padding = size * 0.15;
   const dotSize = size * 0.23;
   const cellSize = (size - padding * 2) / 3;
@@ -27,7 +66,7 @@ function DiceFace({ value, size = 22, isTop = true }: { value: number; size?: nu
       border: `1px solid ${isTop ? "rgba(30,111,217,0.4)" : "rgba(30,111,217,0.15)"}`,
       position: "relative" as const, flexShrink: 0,
     }}>
-      {dots.map(([row, col], i) => (
+      {pips.map(([row, col], i) => (
         <div key={i} style={{
           position: "absolute" as const, width: dotSize, height: dotSize, borderRadius: "50%",
           background: isTop ? "#4DA3FF" : "rgba(77,163,255,0.4)",
@@ -40,27 +79,27 @@ function DiceFace({ value, size = 22, isTop = true }: { value: number; size?: nu
   );
 }
 
-function DiceSetPreview({ leftTop, leftFront, rightTop, rightFront }: {
-  leftTop: number; leftFront: number; rightTop: number; rightFront: number;
-}) {
+function DiceSetPreview({ setId }: { setId: string }) {
+  const data = SET_PIPS[setId];
+  if (!data) return null;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, flexShrink: 0 }}>
-      <DiceFace value={leftTop} size={22} isTop={true} />
-      <DiceFace value={rightTop} size={22} isTop={true} />
-      <DiceFace value={leftFront} size={18} isTop={false} />
-      <DiceFace value={rightFront} size={18} isTop={false} />
+      <DiceFace pips={data.left.topPips} size={22} isTop={true} />
+      <DiceFace pips={data.right.topPips} size={22} isTop={true} />
+      <DiceFace pips={data.left.frontPips} size={18} isTop={false} />
+      <DiceFace pips={data.right.frontPips} size={18} isTop={false} />
     </div>
   );
 }
 
 const DICE_SETS = [
-  { id: "all-sevens", name: "All Sevens", target: "Hit 7 on come out", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%", leftTop: 4, leftFront: 5, rightTop: 3, rightFront: 2 },
-  { id: "hard-way", name: "Hard Way", target: "Avoid 7, survive point", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 4, sevenPct: "25%", leftTop: 4, leftFront: 5, rightTop: 4, rightFront: 5 },
-  { id: "3v-set", name: "3V Set", target: "Hit 6 and 8", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%", leftTop: 3, leftFront: 2, rightTop: 3, rightFront: 6 },
-  { id: "straight-sixes", name: "Straight Sixes", target: "Come out rolls", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%", leftTop: 6, leftFront: 2, rightTop: 6, rightFront: 2 },
-  { id: "crossed-sixes", name: "Crossed Sixes", target: "Outside numbers", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%", leftTop: 6, leftFront: 5, rightTop: 6, rightFront: 4 },
-  { id: "6-5-5-6", name: "6/5-5/6 Set", target: "Come out ONLY", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%", leftTop: 6, leftFront: 5, rightTop: 5, rightFront: 6 },
-  { id: "2v-set", name: "2V Set", target: "Hit 4 and 10", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%", leftTop: 2, leftFront: 3, rightTop: 2, rightFront: 1 },
+  { id: "all-sevens", name: "All Sevens", target: "Hit 7 on come out", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%" },
+  { id: "hard-way", name: "Hard Way", target: "Avoid 7, survive point", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 4, sevenPct: "25%" },
+  { id: "3v-set", name: "3V Set", target: "Hit 6 and 8", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%" },
+  { id: "straight-sixes", name: "Straight Sixes", target: "Come out rolls", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%" },
+  { id: "crossed-sixes", name: "Crossed Sixes", target: "Outside numbers", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%" },
+  { id: "6-5-5-6", name: "6/5-5/6 Set", target: "Come out ONLY", phase: "Come Out", phaseColor: "#2ECC71", sevenWays: 4, sevenPct: "25%" },
+  { id: "2v-set", name: "2V Set", target: "Hit 4 and 10", phase: "Point", phaseColor: "#1E6FD9", sevenWays: 2, sevenPct: "12%" },
 ];
 
 function DiceSetContent() {
@@ -117,7 +156,7 @@ function DiceSetContent() {
                 <h3 style={styles.setName}>{set.name}</h3>
                 <p style={styles.setTarget}>{set.target}</p>
               </div>
-              <DiceSetPreview leftTop={set.leftTop} leftFront={set.leftFront} rightTop={set.rightTop} rightFront={set.rightFront} />
+              <DiceSetPreview setId={set.id} />
             </div>
 
             {/* Seven stats */}
@@ -323,38 +362,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "50%",
     background: "var(--blue-electric)",
     boxShadow: "0 0 6px rgba(30, 111, 217, 0.8)",
-  },
-  customCard: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    padding: "10px",
-    background: "transparent",
-    border: "1px dashed var(--border-bright)",
-    borderRadius: "10px",
-    cursor: "pointer",
-    textAlign: "center" as const,
-    transition: "all 0.2s ease",
-    width: "100%",
-  },
-  customIcon: {
-    fontSize: "1.4rem",
-    color: "var(--silver-mid)",
-    lineHeight: 1,
-  },
-  customName: {
-    fontSize: "0.85rem",
-    fontFamily: "var(--font-display)",
-    fontWeight: 600,
-    color: "var(--silver-mid)",
-    letterSpacing: "0.03em",
-  },
-  customDesc: {
-    fontSize: "0.62rem",
-    color: "var(--text-muted)",
-    lineHeight: 1.3,
   },
   footer: {
     paddingTop: "2px",

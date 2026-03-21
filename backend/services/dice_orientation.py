@@ -235,3 +235,185 @@ def build_rotation_signature(x, y, z):
     def fmt(val):
         return f"+{val}" if val > 0 else str(val)
     return f"X{fmt(x)},Y{fmt(y)},Z{fmt(z)}"
+
+
+# -----------------------------------------------
+# PRESET DICE SETS
+# Each set defined by (left_top, left_front, right_top, right_front)
+# These are the 7 built-in DiceIQ sets.
+# -----------------------------------------------
+
+PRESET_SETS = [
+    {"name": "All Sevens",     "lt": 4, "lf": 2, "rt": 3, "rf": 5,
+     "targets": [7],           "phase": "come_out"},
+    {"name": "Hard Way",       "lt": 6, "lf": 5, "rt": 6, "rf": 5,
+     "targets": [4,5,6,8,9,10], "phase": "point"},
+    {"name": "3V Hard Six",    "lt": 3, "lf": 2, "rt": 3, "rf": 6,
+     "targets": [6, 8],        "phase": "point"},
+    {"name": "Straight Sixes", "lt": 6, "lf": 5, "rt": 6, "rf": 5,
+     "targets": [7],           "phase": "come_out"},
+    {"name": "Crossed Sixes",  "lt": 6, "lf": 2, "rt": 6, "rf": 3,
+     "targets": [4,5,6,8,9,10], "phase": "point"},
+    {"name": "Mini-V Hard 4",  "lt": 3, "lf": 2, "rt": 2, "rf": 3,
+     "targets": [5, 9],        "phase": "point"},
+    {"name": "2V Set",         "lt": 2, "lf": 3, "rt": 2, "rf": 1,
+     "targets": [4, 10],       "phase": "point"},
+]
+
+
+# -----------------------------------------------
+# APPLY ROTATION SIGNATURE TO A DIE
+# Given a starting orientation index and X/Y/Z
+# rotation counts, apply the rotations and return
+# the resulting orientation index.
+# -----------------------------------------------
+
+def apply_rotations(start_idx, x_rot, y_rot, z_rot):
+    """
+    Apply a sequence of rotations to a die.
+    x_rot: pitch rotations (positive=forward, negative=backward)
+    y_rot: yaw rotations (positive=left, negative=right)
+    z_rot: roll rotations (positive=right, negative=left)
+    Returns the final orientation index, or None if invalid.
+    """
+    idx = start_idx
+
+    # Apply X rotations (pitch)
+    x_fn = _rotate_x_forward if x_rot >= 0 else _rotate_x_backward
+    for _ in range(abs(x_rot)):
+        idx = x_fn(idx)
+        if idx is None:
+            return None
+
+    # Apply Y rotations (yaw)
+    y_fn = _rotate_y_left if y_rot >= 0 else _rotate_y_right
+    for _ in range(abs(y_rot)):
+        idx = y_fn(idx)
+        if idx is None:
+            return None
+
+    # Apply Z rotations (roll)
+    z_fn = _rotate_z_right if z_rot >= 0 else _rotate_z_left
+    for _ in range(abs(z_rot)):
+        idx = z_fn(idx)
+        if idx is None:
+            return None
+
+    return idx
+
+
+# -----------------------------------------------
+# RANK ALL SETS FOR A SHOOTER'S SIGNATURE
+# The core recommendation engine.
+# Takes a shooter's measured rotation signature,
+# applies it to every preset set, computes what
+# totals result, and returns a ranked list.
+# -----------------------------------------------
+
+def rank_sets_for_signature(left_x, left_y, left_z, right_x, right_y, right_z, target="srr"):
+    """
+    Rank all preset dice sets for a specific shooter's rotation signature.
+
+    Args:
+        left_x/y/z:  Modal rotation values for the left die
+        right_x/y/z: Modal rotation values for the right die
+        target:       Betting goal — srr / 6_8 / 5_9 / 4_10 / all_box / come_out
+
+    Returns:
+        List of dicts, sorted best-to-worst, each containing:
+        - name, phase, score, sevens, target_hits, distribution, reason
+    """
+    from collections import Counter
+
+    # Default any None values to 0 (no rotation)
+    lx = left_x  or 0
+    ly = left_y  or 0
+    lz = left_z  or 0
+    rx = right_x or 0
+    ry = right_y or 0
+    rz = right_z or 0
+
+    results = []
+
+    for s in PRESET_SETS:
+        # Get starting orientation index for each die
+        l_start = TOP_FRONT_TO_IDX.get((s["lt"], s["lf"]))
+        r_start = TOP_FRONT_TO_IDX.get((s["rt"], s["rf"]))
+        if l_start is None or r_start is None:
+            continue
+
+        # Apply the shooter's rotation signature to each die
+        l_end = apply_rotations(l_start, lx, ly, lz)
+        r_end = apply_rotations(r_start, rx, ry, rz)
+        if l_end is None or r_end is None:
+            continue
+
+        # Get the resulting orientations
+        l_orient = ORIENTATIONS[l_end]  # (top, front, right, bottom, back, left)
+        r_orient = ORIENTATIONS[r_end]
+
+        # On-axis faces: top, front, bottom, back (indices 0,1,3,4)
+        l_axis = (l_orient[0], l_orient[1], l_orient[3], l_orient[4])
+        r_axis = (r_orient[0], r_orient[1], r_orient[3], r_orient[4])
+
+        # Compute all 16 on-axis totals
+        totals = []
+        for lf in l_axis:
+            for rf in r_axis:
+                totals.append(lf + rf)
+
+        dist = Counter(totals)
+        sevens = dist.get(7, 0)
+
+        # Count target hits based on goal
+        target_map = {
+            "come_out": [7],
+            "6_8":      [6, 8],
+            "5_9":      [5, 9],
+            "4_10":     [4, 10],
+            "all_box":  [4, 5, 6, 8, 9, 10],
+            "srr":      [4, 5, 6, 8, 9, 10],  # SRR = all box numbers
+        }
+        target_nums = target_map.get(target, target_map["srr"])
+        target_hits = sum(dist.get(n, 0) for n in target_nums)
+
+        # Score the set: maximize target hits, minimize sevens
+        # For come_out, we WANT sevens, so flip the logic
+        if target == "come_out":
+            # Come out: more sevens = better
+            score = round((sevens / 16) * 100)
+        else:
+            # Point phase: more targets + fewer sevens = better
+            # Weighted: 60% target hits, 40% seven avoidance
+            target_pct = target_hits / 16
+            seven_avoid = 1 - (sevens / 16)
+            score = round((target_pct * 60) + (seven_avoid * 40))
+
+        # Build the distribution breakdown for display
+        breakdown = {}
+        for n in range(2, 13):
+            if dist.get(n, 0) > 0:
+                breakdown[n] = dist[n]
+
+        results.append({
+            "name":        s["name"],
+            "phase":       s["phase"],
+            "score":       score,
+            "sevens":      sevens,
+            "seven_pct":   round(sevens / 16 * 100, 1),
+            "target_hits": target_hits,
+            "target_pct":  round(target_hits / 16 * 100, 1),
+            "targets":     target_nums,
+            "distribution": breakdown,
+            "l_axis":      l_axis,
+            "r_axis":      r_axis,
+        })
+
+    # Sort by score descending (best first)
+    results.sort(key=lambda r: r["score"], reverse=True)
+
+    # Add rank numbers
+    for i, r in enumerate(results):
+        r["rank"] = i + 1
+
+    return results

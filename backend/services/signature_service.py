@@ -32,6 +32,7 @@ from backend.models.session import Session
 from backend.models.shooter_signature import ShooterSignature
 from backend.models.signature_history import SignatureHistory
 from backend.models.dice_set import DiceSet
+from backend.services.dice_orientation import rank_sets_for_signature
 
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
@@ -383,15 +384,22 @@ def compute_signature(user_id, target="srr", era_start=None):
     # ── Step 6: Confidence score ───────────────────────────────────────────
     confidence = compute_confidence(throw_count, avg_y_con, avg_z_con, avg_x_con)
 
-    # ── Step 7: Set recommendation ─────────────────────────────────────────
-    # FIX: recommend_set() now takes modal_y and modal_z — not modal_x
-    # X is backspin (pitch) and has no bearing on which set to use
-    # Y and Z determine whether axis control is confirmed
-    rec = recommend_set(left_modal_y, left_modal_z, target)
+    # ── Step 7: Set recommendation (576 Matrix ranking engine) ─────────────
+    # Ranks ALL preset sets by applying the shooter's actual rotation
+    # signature to each set and computing resulting on-axis distributions.
+    # Returns a ranked list, not just one pick — shooter can try alternatives.
+    ranked_sets = rank_sets_for_signature(
+        left_modal_x, left_modal_y, left_modal_z,
+        right_modal_x, right_modal_y, right_modal_z,
+        target=target,
+    )
 
-    # Look up the recommended set's database ID
-    rec_set = DiceSet.query.filter_by(name=rec["set_name"], set_type="builtin").first()
-    rec_set_id = rec_set.id if rec_set else None
+    # Top pick for saving to the signature record
+    top_pick = ranked_sets[0] if ranked_sets else None
+    rec_set_id = None
+    if top_pick:
+        rec_set = DiceSet.query.filter_by(name=top_pick["name"], set_type="builtin").first()
+        rec_set_id = rec_set.id if rec_set else None
 
     # ── Step 8: Save to ShooterSignature ──────────────────────────────────
     sig = ShooterSignature.query.filter_by(user_id=user_id).first()
@@ -416,7 +424,7 @@ def compute_signature(user_id, target="srr", era_start=None):
     sig.axis_control_rating   = rating
     sig.signature_confidence  = confidence
     sig.recommended_set_id    = rec_set_id
-    sig.recommendation_reason = rec["reason"]
+    sig.recommendation_reason = top_pick["name"] + ": Score " + str(top_pick["score"]) if top_pick else None
     sig.recommendation_target = target
     sig.last_computed_at      = datetime.now(timezone.utc).replace(tzinfo=None)
     sig.needs_recompute       = False
@@ -460,9 +468,9 @@ def compute_signature(user_id, target="srr", era_start=None):
         },
 
         "recommendation": {
-            "set_name":        rec["set_name"],
-            "reason":          rec["reason"],
-            "confidence_note": rec["confidence_note"],
+            "ranked_sets":     ranked_sets,
+            "top_pick":        top_pick["name"] if top_pick else None,
+            "top_score":       top_pick["score"] if top_pick else None,
             "target":          target,
         },
 
